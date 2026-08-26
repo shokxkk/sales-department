@@ -1,0 +1,88 @@
+
+services:
+  # ─────────────────────────────────────────────
+  #  PostgreSQL 16
+  # ─────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: k4_postgres_dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: k4_aicontroller
+      POSTGRES_USER: k4user
+      POSTGRES_PASSWORD: k4password_dev
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U k4user -d k4_aicontroller']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ─────────────────────────────────────────────
+  #  Redis 7
+  # ─────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: k4_redis_dev
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass redis_dev_password
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', '-a', 'redis_dev_password', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ─────────────────────────────────────────────
+  #  MinIO (S3-compatible storage for dev)
+  # ─────────────────────────────────────────────
+  minio:
+    image: minio/minio:latest
+    container_name: k4_minio_dev
+    restart: unless-stopped
+    command: server /data --console-address ':9001'
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin_dev_password
+    ports:
+      - '9000:9000'   # S3 API
+      - '9001:9001'   # Web console
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
+      interval: 30s
+      timeout: 20s
+      retries: 3
+      start_period: 30s
+
+  # ─────────────────────────────────────────────
+  #  MinIO bucket creation (runs once)
+  # ─────────────────────────────────────────────
+  minio-init:
+    image: minio/mc:latest
+    container_name: k4_minio_init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set myminio http://minio:9000 minioadmin minioadmin_dev_password;
+      mc mb --ignore-existing myminio/k4-audio-recordings;
+      mc anonymous set none myminio/k4-audio-recordings;
+      echo 'MinIO bucket initialized.';
+      "
+    restart: 'no'
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:

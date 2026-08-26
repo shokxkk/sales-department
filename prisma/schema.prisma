@@ -1,0 +1,960 @@
+// ═══════════════════════════════════════════════════════════════════
+//  k4-AiController — Prisma Schema
+//  Database: PostgreSQL 16
+//  Multi-tenant: all entities filtered by company_id
+// ═══════════════════════════════════════════════════════════════════
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearchPostgres"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  ENUMS
+// ─────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  SUPER_ADMIN       // Marketing Markazi global admin
+  COMPANY_ADMIN     // Company administrator
+  OWNER             // Business owner (read-heavy)
+  SALES_DIRECTOR    // РОП — head of sales
+  QUALITY_CONTROL   // QC analyst
+}
+
+enum CompanyStatus {
+  ACTIVE
+  TRIAL
+  SUSPENDED
+  BLOCKED
+}
+
+enum IntegrationProvider {
+  AMOCRM
+  BITRIX24  // Stub — not implemented in MVP
+}
+
+enum TelephonyProvider {
+  ONLINEPBX
+  AMOCRM     // Calls synced from amoCRM events API
+  SIPUNI    // Stub
+  MOI_ZVONKI // Stub
+  UTEL      // Stub
+}
+
+enum IntegrationStatus {
+  CONNECTED
+  DISCONNECTED
+  ERROR
+  PENDING_AUTH
+}
+
+enum CallDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum CallStatus {
+  ANSWERED
+  MISSED
+  BUSY
+  FAILED
+}
+
+enum AnalysisStatus {
+  NOT_SELECTED      // Не выбран
+  QUEUED            // Ожидает анализа
+  DOWNLOADING       // Загружается
+  TRANSCRIBING      // Расшифровывается
+  ANALYZING         // Анализируется
+  COMPLETED         // Завершён
+  ERROR             // Ошибка
+  INSUFFICIENT_BALANCE // Недостаточно баланса
+  NO_RECORDING      // Запись отсутствует
+}
+
+enum CallType {
+  NEW_LEAD          // Янги лид
+  REPEAT_CALL       // Қайта қўнғироқ
+  SALE              // Сотув қўнғироғи
+  SERVICE           // Сервис
+  COMPLAINT         // Шикоят
+  WRONG_NUMBER      // Нотўғри мурожаат
+}
+
+enum JobStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
+  FAILED
+  DELAYED
+}
+
+// OKK (Sifat Nazorati) criterion evaluation status
+// NULL = legacy record (pre-OKK), UI shows as legacy badge
+enum CriterionStatus {
+  PASS           // Criterion to'liq bajarildi
+  PARTIAL        // Criterion qisman bajarildi
+  FAIL           // Criterion bajarilmadi
+  NOT_APPLICABLE // Criterion ushbu qo'ng'iroq turiga tegishli emas
+}
+
+enum TransactionType {
+  CREDIT     // Balance added
+  DEBIT      // Balance consumed (confirmed)
+  RESERVE    // Minutes reserved (pre-debit)
+  REFUND     // Reserve returned on failure
+}
+
+enum TariffPlan {
+  MINIMUM
+  MEDIUM
+  MAXIMUM
+  CUSTOM
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  COMPANIES & TENANCY
+// ─────────────────────────────────────────────────────────────────
+
+model Company {
+  id          String        @id @default(uuid())
+  name        String
+  slug        String        @unique  // URL-safe identifier
+  industry    String?
+  logoUrl     String?
+  status      CompanyStatus @default(TRIAL)
+  trialEndsAt DateTime?
+  timezone    String        @default("Asia/Tashkent")
+  language    String        @default("uz")  // uz | ru
+
+  // Settings
+  sendAiNotesToCrm      Boolean @default(false)  // Auto-send AI audit to amoCRM note
+  aiNotesEnabled        Boolean @default(true)
+  maxUsersAllowed       Int     @default(5)
+  allowedIntegrations   String[] @default([])  // ["AMOCRM", "ONLINEPBX"]
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  // Relations
+  companyUsers       CompanyUser[]
+  subscription       Subscription?
+  usageBalance       UsageBalance?
+  usageTransactions  UsageTransaction[]
+  payments           Payment[]
+  crmIntegrations    CRMIntegration[]
+  telephonyIntegrations TelephonyIntegration[]
+  managers           Manager[]
+  customers          Customer[]
+  deals              Deal[]
+  pipelines          Pipeline[]
+  refusalReasons     RefusalReason[]
+  calls              Call[]
+  audits             Audit[]
+  scripts            Script[]
+  syncLogs           SyncLog[]
+  webhookLogs        WebhookLog[]
+  backgroundJobs     BackgroundJob[]
+  activityLogs       ActivityLog[]
+  notifications      Notification[]
+
+  @@map("companies")
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  USERS & AUTH
+// ─────────────────────────────────────────────────────────────────
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  phone         String?  @unique
+  name          String
+  passwordHash  String
+  avatarUrl     String?
+  isActive               Boolean  @default(true)
+  passwordChangeRequired Boolean  @default(false)
+  lastLoginAt            DateTime?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  // Relations
+  companyUsers     CompanyUser[]
+  refreshTokens    RefreshToken[]
+  activityLogs     ActivityLog[]
+  auditScoreHistory AuditScoreHistory[]
+  notifications    Notification[]
+
+  @@map("users")
+}
+
+model CompanyUser {
+  id        String   @id @default(uuid())
+  userId    String
+  companyId String
+  role      UserRole
+  isActive  Boolean  @default(true)
+  joinedAt  DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, companyId])
+  @@map("company_users")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  tokenHash String   @unique  // Stored as SHA-256 hash, never plaintext
+  userId    String
+  companyId String?  // Which company context this token is for
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  revokedAt DateTime?
+  ipAddress String?
+  userAgent String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tokenHash])
+  @@map("refresh_tokens")
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  TARIFFS & SUBSCRIPTIONS
+// ─────────────────────────────────────────────────────────────────
+
+model Tariff {
+  id                  String     @id @default(uuid())
+  name                String
+  plan                TariffPlan
+  priceMonthly        Decimal    @db.Decimal(10, 2)
+  maxUsers            Int
+  maxCrmIntegrations  Int        @default(1)
+  maxTelephony        Int        @default(1)
+  aiMinutesPerMonth   Int        // Included AI minutes
+  features            String[]   // Feature flags
+  isActive            Boolean    @default(true)
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+
+  subscriptions Subscription[]
+
+  @@map("tariffs")
+}
+
+model Subscription {
+  id              String    @id @default(uuid())
+  companyId       String    @unique
+  tariffId        String
+  startDate       DateTime
+  endDate         DateTime?
+  isActive        Boolean   @default(true)
+  autoRenew       Boolean   @default(false)
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+  tariff  Tariff  @relation(fields: [tariffId], references: [id])
+
+  @@map("subscriptions")
+}
+
+model UsageBalance {
+  id               String   @id @default(uuid())
+  companyId        String   @unique
+  totalMinutes     Int      @default(0)  // All-time added
+  usedMinutes      Int      @default(0)  // Confirmed consumption
+  reservedMinutes  Int      @default(0)  // In-flight reservations
+  updatedAt        DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  // Computed: availableMinutes = totalMinutes - usedMinutes - reservedMinutes
+  @@map("usage_balances")
+}
+
+model UsageTransaction {
+  id          String          @id @default(uuid())
+  companyId   String
+  type        TransactionType
+  minutes     Int
+  callId      String?         // Associated call
+  jobId       String?         // Associated background job
+  description String?
+  balanceBefore Int
+  balanceAfter  Int
+  createdAt   DateTime        @default(now())
+  performedBy String?         // userId who triggered
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+  @@index([callId])
+  @@map("usage_transactions")
+}
+
+model Payment {
+  id          String   @id @default(uuid())
+  companyId   String
+  amount      Decimal  @db.Decimal(10, 2)
+  currency    String   @default("UZS")
+  minutesAdded Int     @default(0)
+  method      String?  // card, transfer, manual
+  reference   String?
+  status      String   @default("completed")
+  notes       String?
+  createdAt   DateTime @default(now())
+  addedBy     String?  // SUPER_ADMIN userId
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@map("payments")
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  CRM INTEGRATIONS
+// ─────────────────────────────────────────────────────────────────
+
+model CRMIntegration {
+  id              String              @id @default(uuid())
+  companyId       String
+  provider        IntegrationProvider
+  status          IntegrationStatus   @default(DISCONNECTED)
+
+  // Encrypted storage (AES-256-GCM, format: iv:authTag:ciphertext in hex)
+  accessTokenEnc  String?  // Encrypted access token
+  refreshTokenEnc String?  // Encrypted refresh token
+  tokenExpiresAt  DateTime?
+
+  // Provider-specific config (encrypted JSON)
+  configEnc       String?  // domain, accountId, clientId, etc.
+
+  // Sync state
+  lastSyncAt      DateTime?
+  lastError       String?
+  syncCursor      String?  // Pagination cursor for incremental sync
+  webhookUrl      String?
+  webhookSecret   String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@unique([companyId, provider])
+  @@map("crm_integrations")
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  TELEPHONY INTEGRATIONS
+// ─────────────────────────────────────────────────────────────────
+
+model TelephonyIntegration {
+  id           String            @id @default(uuid())
+  companyId    String
+  provider     TelephonyProvider
+  status       IntegrationStatus @default(DISCONNECTED)
+
+  // Encrypted API credentials
+  configEnc    String?  // Encrypted JSON: apiKey, domain, accountId, etc.
+
+  lastSyncAt   DateTime?
+  lastError    String?
+  webhookUrl   String?
+  webhookSecret String?
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@unique([companyId, provider])
+  @@map("telephony_integrations")
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  CRM DATA: MANAGERS, CUSTOMERS, DEALS
+// ─────────────────────────────────────────────────────────────────
+
+model Manager {
+  id           String   @id @default(uuid())
+  companyId    String
+  crmId        String?  // External CRM manager ID
+  name         String
+  email        String?
+  phone        String?
+  position     String?
+  department   String?
+  avatarUrl    String?
+  isActive     Boolean  @default(true)
+  crmProvider  String?  // amocrm | bitrix24
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  company  Company  @relation(fields: [companyId], references: [id])
+  deals    Deal[]
+  calls    Call[]
+
+  @@unique([companyId, crmId, crmProvider])
+  @@index([companyId])
+  @@map("managers")
+}
+
+model Customer {
+  id          String   @id @default(uuid())
+  companyId   String
+  crmId       String?
+  name        String
+  phone       String?
+  email       String?
+  company     String?  // Customer's company name
+  crmProvider String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  companyRel Company  @relation(fields: [companyId], references: [id])
+  deals      Deal[]
+  calls      Call[]
+
+  @@unique([companyId, crmId, crmProvider])
+  @@index([companyId])
+  @@map("customers")
+}
+
+model Pipeline {
+  id          String   @id @default(uuid())
+  companyId   String
+  crmId       String?
+  crmProvider String?
+  name        String
+  isMain      Boolean  @default(false)
+  isDeleted   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+  stages  PipelineStage[]
+  deals   Deal[]
+
+  @@unique([companyId, crmId, crmProvider])
+  @@map("pipelines")
+}
+
+model PipelineStage {
+  id          String   @id @default(uuid())
+  companyId   String
+  pipelineId  String
+  crmId       String?
+  name        String
+  color       String?
+  sort        Int      @default(0)
+  isSuccess   Boolean  @default(false)
+  isUnsorted  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  pipeline Pipeline @relation(fields: [pipelineId], references: [id])
+  deals    Deal[]
+
+  @@unique([pipelineId, crmId])
+  @@map("pipeline_stages")
+}
+
+model Deal {
+  id              String    @id @default(uuid())
+  companyId       String
+  crmId           String?
+  crmProvider     String?
+  name            String
+  budget          Decimal?  @db.Decimal(15, 2)
+  currency        String?   @default("UZS")
+  pipelineId      String?
+  stageId         String?
+  managerId       String?
+  customerId      String?
+  status          String?   // open, won, lost
+  source          String?
+  tags            String[]  @default([])
+  refusalReasonId String?
+  closedAt        DateTime?
+  crmCreatedAt    DateTime?
+  crmUpdatedAt    DateTime?
+  customFields    Json?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  company       Company        @relation(fields: [companyId], references: [id])
+  pipeline      Pipeline?      @relation(fields: [pipelineId], references: [id])
+  stage         PipelineStage? @relation(fields: [stageId], references: [id])
+  manager       Manager?       @relation(fields: [managerId], references: [id])
+  customer      Customer?      @relation(fields: [customerId], references: [id])
+  refusalReason RefusalReason? @relation(fields: [refusalReasonId], references: [id])
+  tasks         DealTask[]
+  calls         Call[]
+
+  @@unique([companyId, crmId, crmProvider])
+  @@index([companyId])
+  @@index([managerId])
+  @@map("deals")
+}
+
+model DealTask {
+  id          String    @id @default(uuid())
+  companyId   String
+  dealId      String
+  crmId       String?
+  crmProvider String?
+  managerId   String?
+  type        String?
+  text        String?
+  dueAt       DateTime?
+  completedAt DateTime?
+  isOverdue   Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  deal Deal @relation(fields: [dealId], references: [id], onDelete: Cascade)
+
+  @@unique([dealId, crmId, crmProvider])
+  @@map("deal_tasks")
+}
+
+model RefusalReason {
+  id          String   @id @default(uuid())
+  companyId   String
+  crmId       String?
+  crmProvider String?
+  name        String
+  sort        Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id])
+  deals   Deal[]
+
+  @@unique([companyId, crmId, crmProvider])
+  @@map("refusal_reasons")
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  CALLS & RECORDINGS
+// ─────────────────────────────────────────────────────────────────
+
+model Call {
+  id                 String          @id @default(uuid())
+  companyId          String
+  telephonyProvider  TelephonyProvider
+  externalCallId     String          // Provider's unique call ID
+  direction          CallDirection
+  status             CallStatus
+  customerPhone      String?         // External number
+  managerExtension   String?         // Internal extension
+  managerId          String?
+  customerId         String?
+  dealId             String?
+  startedAt          DateTime
+  answeredAt         DateTime?
+  endedAt            DateTime?
+  durationSeconds    Int             @default(0)
+  talkDurationSeconds Int            @default(0)
+  callType           CallType?       // Set before or during analysis
+  analysisStatus     AnalysisStatus  @default(NOT_SELECTED)
+  aiScore            Int?            // Final score after audit
+  manualScore        Int?            // Overridden score
+  externalRecordingUrl String?       // Recording URL from amoCRM/telephony (when not stored in MinIO)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  company    Company   @relation(fields: [companyId], references: [id])
+  manager    Manager?  @relation(fields: [managerId], references: [id])
+  customer   Customer? @relation(fields: [customerId], references: [id])
+  deal       Deal?     @relation(fields: [dealId], references: [id])
+  recording  CallRecording?
+  transcript CallTranscript?
+  audit      Audit?
+
+  // Dedup: one provider can't send same call twice
+  @@unique([companyId, telephonyProvider, externalCallId])
+  @@index([companyId])
+  @@index([managerId])
+  @@index([analysisStatus])
+  @@map("calls")
+}
+
+model CallRecording {
+  id          String   @id @default(uuid())
+  callId      String   @unique
+  companyId   String
+  s3Key       String   // Private S3 object key
+  s3Bucket    String
+  fileSize    BigInt?
+  mimeType    String   @default("audio/wav")
+  durationSeconds Int?
+  downloadedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  call Call @relation(fields: [callId], references: [id], onDelete: Cascade)
+
+  @@map("call_recordings")
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  TRANSCRIPTION
+// ─────────────────────────────────────────────────────────────────
+
+model CallTranscript {
+  id          String   @id @default(uuid())
+  callId      String   @unique
+  companyId   String
+  language    String   @default("uz")  // Detected primary language
+  rawText     String   // Full transcript text (Uzbek Cyrillic)
+  provider    String   @default("openai_whisper")
+  modelUsed   String?
+  durationSeconds Float?
+  completedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  call     Call              @relation(fields: [callId], references: [id], onDelete: Cascade)
+  segments TranscriptSegment[]
+
+  @@map("call_transcripts")
+}
+
+model TranscriptSegment {
+  id           String  @id @default(uuid())
+  transcriptId String
+  callId       String
+  speaker      String  // "MANAGER" | "CUSTOMER" | "UNKNOWN"
+  startSeconds Float
+  endSeconds   Float
+  text         String
+  confidence   Float   @default(1.0)
+  language     String?  // uz | ru (per segment)
+  sort         Int
+
+  transcript CallTranscript @relation(fields: [transcriptId], references: [id], onDelete: Cascade)
+
+  @@index([transcriptId])
+  @@map("transcript_segments")
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  AI AUDIT
+// ─────────────────────────────────────────────────────────────────
+
+model Audit {
+  id              String   @id @default(uuid())
+  callId          String   @unique
+  companyId       String
+  callType        CallType?
+
+  // Scores
+  aiScore         Int      // AI-computed total score
+  finalScore      Int      // Actual final (may be manually adjusted)
+  maxPossibleScore Int     @default(100)
+
+  // Speech analytics
+  managerTalkRatio    Int?  // % of speaking time
+  customerTalkRatio   Int?
+  interruptionsCount  Int   @default(0)
+  longPausesCount     Int   @default(0)
+  fillerWordsJson     Json? // [{word, count}]
+
+  // Qualitative findings
+  rudenessDetected       Boolean @default(false)
+  falsePromisesDetected  Boolean @default(false)
+  scriptComplianceScore  Int?    // 0-100%
+
+  // Sale outcome
+  saleProbability  Int?  // 0-100%
+  refusalCategory  String?  // AI-detected refusal category
+
+  // Structured results (Uzbek Cyrillic)
+  summary          String
+  strengthsJson    Json    // String[]
+  mistakesJson     Json    // String[]
+  recommendationsJson Json // String[]
+  importantQuotesJson Json? // [{speaker, timestamp, text}]
+  objectionsJson   Json?   // [{category, quote, timestamp, handled}]
+  customerNeedsJson Json?  // String[]
+  nextStep         String?
+
+  // OKK: Critical fail summary flag (true if any criterion has criticalFail=true)
+  hasCriticalFails  Boolean  @default(false)
+
+  // OKK: Call outcome classification (e.g. "Sold", "Lost", "Follow-up", "Scheduled")
+  callResult        String?
+
+  // OKK: Separate recommendation for ROP/Sales Director
+  ropRecommendation  String?
+
+  // OKK: 11-block business analysis structured JSON
+  // { callContext, customerRequest, productDemand, operations,
+  //   logistics, objections, refusalReasons, marketingInsights,
+  //   managerPerformance, customerSentiment, businessInsights, managementRecommendations }
+  // All sub-fields are optional — AI must not invent data if not present in transcript
+  businessAnalysisJson Json?  // Structured business analysis, all fields optional
+
+  // Raw AI response
+  rawAiResponseJson Json  // Full validated JSON from GPT-4o
+
+  // Audit metadata
+  aiProvider    String  @default("openai")
+  aiModel       String  @default("gpt-4o")
+  promptVersion Int     @default(1)
+  completedAt   DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  call             Call               @relation(fields: [callId], references: [id], onDelete: Cascade)
+  company          Company            @relation(fields: [companyId], references: [id])
+  criterionResults AuditCriterionResult[]
+  scoreHistory     AuditScoreHistory[]
+
+  @@map("audits")
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  CHECKLIST
+// ─────────────────────────────────────────────────────────────────
+
+model AuditCriterion {
+  id              String   @id @default(uuid())
+  code            String   @unique  // e.g. "greeting", "need_identification"
+  section         String   // "greeting_start" | "need_identification" | etc.
+  nameUz          String   // Uzbek Cyrillic name
+  nameRu          String   // Russian name
+  descriptionUz   String?
+  maxScore        Int
+  weight          Decimal  @default(1.0) @db.Decimal(5, 2)
+  isCritical      Boolean  @default(false)
+  criticalPenalty Int?     // Points deducted if critical violation
+  appliesTo       String[] @default([])  // CallType codes, empty = all
+  exampleGood     String?
+  exampleBad      String?
+  isActive        Boolean  @default(true)
+  sort            Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  results AuditCriterionResult[]
+
+  @@map("audit_criteria")
+}
+
+model AuditCriterionResult {
+  id            String  @id @default(uuid())
+  auditId       String
+  criterionId   String
+  criterionCode String
+
+  // Scores
+  aiScore       Int
+  finalScore    Int     // May be manually adjusted
+  maxScore      Int
+  passed        Boolean
+
+  // OKK: Structured status (nullable — NULL = legacy record pre-OKK)
+  // PASS | PARTIAL | FAIL | NOT_APPLICABLE
+  // Business rule: NOT_APPLICABLE is excluded from total denominator
+  //   when criterion.appliesTo does not include the call type.
+  // PARTIAL score = aiScore as-is (proportional, set by GPT)
+  // FAIL score = 0
+  // PASS score = maxScore
+  status        CriterionStatus?   // NULL for legacy records — UI shows "legacy" badge
+
+  // OKK: Criterion-level structured findings (nullable for backward compat)
+  strengthsJson      Json?   // String[] — kuchli tomonlar
+  errorsJson         Json?   // String[] — xatolar ro'yxati
+  recommendationsJson Json?  // String[] — tavsiyalar
+
+  // OKK: Critical violation flag
+  // true if criterion.isCritical == true AND status == FAIL
+  criticalFail  Boolean  @default(false)
+
+  // OKK: Override tracking
+  isOverridden  Boolean  @default(false)  // true after any QC score change
+
+  // Evidence
+  explanationUz String?  // AI explanation in Uzbek Cyrillic
+  evidenceTimestamp String?  // "02:48"
+  evidenceQuote String?
+
+  audit     Audit          @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  criterion AuditCriterion @relation(fields: [criterionId], references: [id])
+
+  @@unique([auditId, criterionId])
+  @@map("audit_criterion_results")
+}
+
+model AuditScoreHistory {
+  id            String   @id @default(uuid())
+  auditId       String
+  criterionId   String?  // null = overall score change
+  changedBy     String   // userId
+  oldScore      Int
+  newScore      Int
+  comment       String?
+  changedAt     DateTime @default(now())
+
+  audit     Audit @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  changedByUser User @relation(fields: [changedBy], references: [id])
+
+  @@index([auditId])
+  @@map("audit_score_history")
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  SCRIPTS
+// ─────────────────────────────────────────────────────────────────
+
+model Script {
+  id          String    @id @default(uuid())
+  companyId   String
+  name        String
+  callType    CallType?  // null = applies to all
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  company Company      @relation(fields: [companyId], references: [id])
+  stages  ScriptStage[]
+
+  @@map("scripts")
+}
+
+model ScriptStage {
+  id                    String  @id @default(uuid())
+  scriptId              String
+  name                  String
+  description           String?
+  requiredPhrases       String[] @default([])
+  forbiddenPhrases      String[] @default([])
+  requiredActions       String[] @default([])
+  sort                  Int      @default(0)
+
+  script Script @relation(fields: [scriptId], references: [id], onDelete: Cascade)
+
+  @@map("script_stages")
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  BACKGROUND JOBS
+// ─────────────────────────────────────────────────────────────────
+
+model BackgroundJob {
+  id          String    @id @default(uuid())
+  companyId   String
+  queue       String    // "call-analysis" | "crm-sync" | "telephony-sync"
+  jobName     String    // Specific job within queue
+  bullmqJobId String?   // BullMQ's internal job ID
+  status      JobStatus @default(PENDING)
+  callId      String?
+  payload     Json?
+  result      Json?
+  error       String?
+  attempts    Int       @default(0)
+  maxAttempts Int       @default(3)
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+  @@index([status])
+  @@index([callId])
+  @@map("background_jobs")
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  SYNC & WEBHOOKS
+// ─────────────────────────────────────────────────────────────────
+
+model SyncLog {
+  id          String   @id @default(uuid())
+  companyId   String
+  provider    String   // amocrm | onlinepbx
+  syncType    String   // full | incremental | webhook
+  entityType  String?  // deals | contacts | calls | managers
+  itemsSynced Int      @default(0)
+  itemsCreated Int     @default(0)
+  itemsUpdated Int     @default(0)
+  status      String   @default("success")  // success | partial | failed
+  error       String?
+  startedAt   DateTime @default(now())
+  completedAt DateTime?
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+  @@map("sync_logs")
+}
+
+model WebhookLog {
+  id          String   @id @default(uuid())
+  companyId   String
+  provider    String
+  eventType   String
+  payload     Json
+  status      String   @default("received")  // received | processed | ignored | error
+  error       String?
+  processedAt DateTime?
+  createdAt   DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+  @@map("webhook_logs")
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  ACTIVITY LOG & NOTIFICATIONS
+// ─────────────────────────────────────────────────────────────────
+
+model ActivityLog {
+  id          String   @id @default(uuid())
+  companyId   String?  // null for SUPER_ADMIN global actions
+  userId      String?
+  action      String   // e.g. "IMPERSONATE_COMPANY", "SCORE_OVERRIDE", "SYNC_AMOCRM"
+  entityType  String?
+  entityId    String?
+  meta        Json?    // Additional context
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  company Company? @relation(fields: [companyId], references: [id])
+  user    User?    @relation(fields: [userId], references: [id])
+
+  @@index([companyId])
+  @@index([userId])
+  @@map("activity_logs")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  companyId String
+  userId    String?  // null = all company users
+  type      String   // "analysis_complete" | "low_balance" | "sync_error"
+  title     String
+  body      String
+  meta      Json?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id])
+  user    User?   @relation(fields: [userId], references: [id])
+
+  @@index([companyId, isRead])
+  @@map("notifications")
+}
