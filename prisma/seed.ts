@@ -3,7 +3,7 @@
 //  Run with: npm run db:seed
 // ─────────────────────────────────────────────────────────────────
 import { PrismaClient, UserRole, CompanyStatus, AnalysisStatus, CallDirection, CallStatus, TariffPlan } from '@prisma/client'
-import * as argon2 from 'argon2'
+import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
 
@@ -222,11 +222,11 @@ async function main() {
   // ─── Company Users ─────────────────────────────────────────────────
 
   // Company Admin
-  const adminPw = await argon2.hash('Admin123!')
+  const adminPw = await bcrypt.hash('Admin123!', 10)
   const companyAdmin = await prisma.user.upsert({
     where: { email: 'admin@demo.uz' },
     create: { email: 'admin@demo.uz', name: 'Администратор', passwordHash: adminPw },
-    update: {},
+    update: { passwordHash: adminPw },
   })
   await prisma.companyUser.upsert({
     where: { userId_companyId: { userId: companyAdmin.id, companyId: company1.id } },
@@ -236,11 +236,11 @@ async function main() {
   console.log(`  ✓ COMPANY_ADMIN: admin@demo.uz / Admin123!`)
 
   // Owner
-  const ownerPw = await argon2.hash('Owner123!')
+  const ownerPw = await bcrypt.hash('Owner123!', 10)
   const owner = await prisma.user.upsert({
     where: { email: 'owner@demo.uz' },
     create: { email: 'owner@demo.uz', name: 'Собственник', passwordHash: ownerPw },
-    update: {},
+    update: { passwordHash: ownerPw },
   })
   await prisma.companyUser.upsert({
     where: { userId_companyId: { userId: owner.id, companyId: company1.id } },
@@ -249,11 +249,11 @@ async function main() {
   })
 
   // Sales Director (ROP)
-  const ropPw = await argon2.hash('Rop123!')
+  const ropPw = await bcrypt.hash('Rop123!', 10)
   const rop = await prisma.user.upsert({
     where: { email: 'rop@demo.uz' },
     create: { email: 'rop@demo.uz', name: 'Руководитель отдела продаж', passwordHash: ropPw },
-    update: {},
+    update: { passwordHash: ropPw },
   })
   await prisma.companyUser.upsert({
     where: { userId_companyId: { userId: rop.id, companyId: company1.id } },
@@ -263,11 +263,11 @@ async function main() {
   console.log(`  ✓ SALES_DIRECTOR: rop@demo.uz / Rop123!`)
 
   // QC
-  const qcPw = await argon2.hash('Qc123!')
+  const qcPw = await bcrypt.hash('Qc123!', 10)
   const qc = await prisma.user.upsert({
     where: { email: 'qc@demo.uz' },
     create: { email: 'qc@demo.uz', name: 'Контроль качества', passwordHash: qcPw },
-    update: {},
+    update: { passwordHash: qcPw },
   })
   await prisma.companyUser.upsert({
     where: { userId_companyId: { userId: qc.id, companyId: company1.id } },
