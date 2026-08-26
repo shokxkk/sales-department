@@ -12,12 +12,12 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: 'NERION — AI Sales Intelligence & Control',
-    template: '%s | NERION',
+    default: 'Fraganus AI — AI Sales Intelligence & Control',
+    template: '%s | Fraganus AI',
   },
   description:
-    'NERION — AI nazorat va savdo auditori. amoCRM, OnlinePBX, ChatGPT tahlili (Yozuv → Transkripsiya → AI Score → Chek-list → Xatolar → Tavsiya).',
-  keywords: ['NERION', 'AI аудит', 'продажи', 'amoCRM', 'ChatGPT', 'OnlinePBX', 'контроль качества'],
+    'Fraganus AI — AI nazorat va savdo auditori. amoCRM, OnlinePBX, ChatGPT tahlili (Yozuv → Transkripsiya → AI Score → Chek-list → Xatolar → Tavsiya).',
+  keywords: ['Fraganus AI', 'AI аудит', 'продажи', 'amoCRM', 'ChatGPT', 'OnlinePBX', 'контроль качества'],
 }
 
 export default function RootLayout({

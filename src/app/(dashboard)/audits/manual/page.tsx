@@ -733,7 +733,7 @@ export default function ManualAuditPage() {
 <div class="cover">
   <div class="cover-top">
     <div>
-      <div class="brand">NERION</div>
+      <div class="brand">Fraganus AI</div>
       <div class="brand-sub">AI SALES INTELLIGENCE</div>
     </div>
     <div class="cover-badge">ОКК ҲИСОБОТИ</div>
@@ -806,7 +806,7 @@ ${businessHtml ? `
 ${businessHtml}` : ''}
 
 <div class="footer">
-  Ҳисобот яратилди: ${dateStr} · NERION AI Sales Intelligence System · ОКК версияси 2.0
+  Ҳисобот яратилди: ${dateStr} · Fraganus AI Sales Intelligence System · ОКК версияси 2.0
 </div>
 
 <script>

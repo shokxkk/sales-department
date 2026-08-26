@@ -301,7 +301,7 @@ export default function LoginPage() {
           </div>
 
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4 text-white drop-shadow-2xl">
-            Clario <span style={{ color: '#D8FF38', textShadow: '0 0 30px rgba(216, 255, 56, 0.5)' }}>AI</span>
+            Fraganus <span style={{ color: '#D8FF38', textShadow: '0 0 30px rgba(216, 255, 56, 0.5)' }}>AI</span>
           </h1>
           <p className="text-[#9CA3AF] text-[15px] sm:text-base font-medium mb-3 max-w-[280px] sm:max-w-none">
             Сотувни эмас, натижани бошқаринг.
@@ -433,7 +433,7 @@ export default function LoginPage() {
 
         {/* Footer */}
         <p className="text-center text-[11px] text-[#9CA3AF] mt-10 font-medium tracking-widest uppercase opacity-60 hover:opacity-100 transition-opacity cursor-default">
-          © {new Date().getFullYear()} Clario AI
+          © {new Date().getFullYear()} Fraganus AI
         </p>
       </div>
     </div>

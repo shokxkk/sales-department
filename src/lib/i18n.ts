@@ -132,7 +132,7 @@ export interface TranslationSchema {
 export const translations: Record<Language, TranslationSchema> = {
   ru: {
     brand: {
-      name: 'NERION',
+      name: 'Fraganus AI',
       tagline: 'AI Контроль продаж',
       status: 'СИСТЕМА АКТИВНА',
       version: 'v2.2.0 // AI CORE',
@@ -224,7 +224,7 @@ export const translations: Record<Language, TranslationSchema> = {
     },
     help: {
       title: 'Центр помощи и инструкции',
-      subtitle: 'Пошаговые руководства по настройке NERION и оптимизации продаж',
+      subtitle: 'Пошаговые руководства по настройке Fraganus AI и оптимизации продаж',
       quickStart: 'Быстрый старт',
       guides: {
         amocrmTitle: '1. Как подключить amoCRM через Долгосрочный токен',
@@ -261,7 +261,7 @@ export const translations: Record<Language, TranslationSchema> = {
 
   uz: {
     brand: {
-      name: 'NERION',
+      name: 'Fraganus AI',
       tagline: 'Sotuvlarni AI Nazorat Qilish',
       status: 'TIZIM FAOL',
       version: 'v2.2.0 // AI CORE',
@@ -353,14 +353,14 @@ export const translations: Record<Language, TranslationSchema> = {
     },
     help: {
       title: 'Yordam markazi va qo‘llanmalar',
-      subtitle: 'NERION tizimini sozlash va sotuvlarni oshirish bo‘yicha bosqichma-bosqich yo‘riqnoma',
+      subtitle: 'Fraganus AI tizimini sozlash va sotuvlarni oshirish bo‘yicha bosqichma-bosqich yo‘riqnoma',
       quickStart: 'Tezkor boshlash',
       guides: {
         amocrmTitle: '1. amoCRM ni Uzoq muddatli token orqali ulash',
         amocrmStep1: 'amoCRM shaxsiy kabinetiga administrator sifatida kiring.',
         amocrmStep2: 'Sozlamalar (Настройки) → Integratsiyalar (Интеграции) → Yangi integratsiya yarating.',
         amocrmStep3: '«Долгосрочный токен» bo‘limidan tokenni yarating va nusxalang.',
-        amocrmStep4: 'NERION dagi «Integratsiyalar» bo‘limiga subdomen va tokenni kiritib saqlang.',
+        amocrmStep4: 'Fraganus AI dagi «Integratsiyalar» bo‘limiga subdomen va tokenni kiritib saqlang.',
         openaiTitle: '2. AI Audit uchun ChatGPT (OpenAI) ni ulash',
         openaiStep1: 'platform.openai.com sahifasidan shaxsiy API kalit oling.',
         openaiStep2: 'Sozlamalar → ChatGPT bo‘limiga sk-proj-... kalitingizni kiriting.',

@@ -224,7 +224,7 @@ export async function analyzeCallDirectly(params: {
     if (call.deal?.crmId) {
       try {
         const { sendAuditNoteToAmoCRM } = await import('@/lib/integrations/amocrm')
-        const providerLabel = ai.name === 'mustaqillm' ? 'MustaqiLLM (NeuronAI) 🇺🇿' : 'NERION AI'
+        const providerLabel = ai.name === 'mustaqillm' ? 'MustaqiLLM (NeuronAI) 🇺🇿' : 'Fraganus AI'
         const noteText = `🤖 ${providerLabel} АУДИТ
 📊 Баҳо: ${auditResult.total_score}/100
 👤 Менежер: ${call.manager?.name || 'Менежер'}

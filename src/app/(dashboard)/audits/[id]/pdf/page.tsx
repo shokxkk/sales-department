@@ -143,7 +143,7 @@ export default function AuditPdfPage() {
       <div className="border-b-2 border-gray-900 pb-4 mb-6 flex justify-between items-end">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold px-2 py-0.5 rounded bg-gray-900 text-white tracking-widest uppercase">Clario AI</span>
+            <span className="text-xs font-bold px-2 py-0.5 rounded bg-gray-900 text-white tracking-widest uppercase">Fraganus AI</span>
             <span className="text-xs font-bold text-gray-500 tracking-wider uppercase">Сифат Назорати (ОКК)</span>
           </div>
           <h1 className="text-2xl font-black text-gray-900 tracking-tight mt-1">АУДИТ ВА ЭКСПЕРТИЗА ҲИСОБОТИ</h1>
@@ -356,7 +356,7 @@ export default function AuditPdfPage() {
 
       {/* Footer */}
       <div className="pt-4 border-t border-gray-200 text-center text-[10px] text-gray-400">
-        Clario AI • Сифат Назорати (OKK) тизими орқали автоматик шакллантирилган • k4-aicontroller.uz
+        Fraganus AI • Сифат Назорати (OKK) тизими орқали автоматик шакллантирилган
       </div>
     </div>
   )

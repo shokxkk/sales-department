@@ -32,7 +32,7 @@ export default function HelpPage() {
   const faqs = language === 'uz' ? [
     {
       q: 'amoCRM bilan qanday tezkor ulanish mumkin?',
-      a: 'amoCRM shaxsiy kabinetida «Настройки → Интеграции → Создать интеграцию» bo‘limiga kiring va «Долгосрочный токен» ni ko‘chirib oling. Uni NERION sozlamalariga kiritsangiz, 1 daqiqada barcha bitimlar va qo‘ng‘iroqlar ulanadi.',
+      a: 'amoCRM shaxsiy kabinetida «Настройки → Интеграции → Создать интеграцию» bo‘limiga kiring va «Долгосрочный токен» ni ko‘chirib oling. Uni Fraganus AI sozlamalariga kiritsangiz, 1 daqiqada barcha bitimlar va qo‘ng‘iroqlar ulanadi.',
     },
     {
       q: 'AI Audit (ChatGPT) qanday ishlaydi?',
@@ -40,7 +40,7 @@ export default function HelpPage() {
     },
     {
       q: 'Qaysi OpenAI modellari qo‘llab-quvvatlanadi?',
-      a: 'NERION GPT-4o, GPT-4o-mini va Whisper-1 modellarini qo‘llab-quvvatlaydi. O‘zbek va rus tillaridagi suhbatlarni eng yuqori aniqlikda tahlil qilish uchun GPT-4o tavsiya etiladi.',
+      a: 'Fraganus AI GPT-4o, GPT-4o-mini va Whisper-1 modellarini qo‘llab-quvvatlaydi. O‘zbek va rus tillaridagi suhbatlarni eng yuqori aniqlikda tahlil qilish uchun GPT-4o tavsiya etiladi.',
     },
     {
       q: 'OnlinePBX yoki boshqa telefoniya qanday ulanadi?',
@@ -49,7 +49,7 @@ export default function HelpPage() {
   ] : [
     {
       q: 'Как быстро подключить amoCRM?',
-      a: 'В личном кабинете amoCRM перейдите в «Настройки → Интеграции → Создать интеграцию» и скопируйте «Долгосрочный токен». Вставьте его в разделе Настройки NERION — интеграция займет меньше 1 минуты.',
+      a: 'В личном кабинете amoCRM перейдите в «Настройки → Интеграции → Создать интеграцию» и скопируйте «Долгосрочный токен». Вставьте его в разделе Настройки Fraganus AI — интеграция займет меньше 1 минуты.',
     },
     {
       q: 'Как работает AI Аудит на базе ChatGPT?',
@@ -57,7 +57,7 @@ export default function HelpPage() {
     },
     {
       q: 'Какие модели OpenAI поддерживаются?',
-      a: 'NERION поддерживает модели GPT-4o, GPT-4o-mini и Whisper-1. Для максимальной точности на узбекском и русском языках рекомендуется GPT-4o.',
+      a: 'Fraganus AI поддерживает модели GPT-4o, GPT-4o-mini и Whisper-1. Для максимальной точности на узбекском и русском языках рекомендуется GPT-4o.',
     },
     {
       q: 'Как подключить OnlinePBX или другую телефонию?',

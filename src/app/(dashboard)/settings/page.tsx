@@ -57,7 +57,7 @@ export default function SettingsPage() {
   const [amoSubdomain, setAmoSubdomain] = useState('marketingmarkazi')
   const [amoToken, setAmoToken] = useState('eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9...')
   const [telephonyKey, setTelephonyKey] = useState('onlinepbx_live_key_9921')
-  const [webhookUrl, setWebhookUrl] = useState('https://app.nerion.ai/api/webhooks/calls')
+  const [webhookUrl, setWebhookUrl] = useState('https://app.fraganus.ai/api/webhooks/calls')
 
   const handleSaveGeneral = () => {
     toast.success(t.settings.general.saved)
