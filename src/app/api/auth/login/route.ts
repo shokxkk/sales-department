@@ -2,7 +2,7 @@
 // Authenticates user, returns access token + sets refresh token cookie
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import * as argon2 from 'argon2'
+import { verifyPassword } from '@/lib/auth/password'
 import { prisma } from '@/lib/prisma'
 import {
   signAccessToken,
@@ -52,8 +52,8 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Verify password
-    const passwordValid = await argon2.verify(user.passwordHash, password)
+    // Verify password safely
+    const passwordValid = await verifyPassword(user.passwordHash, password)
     if (!passwordValid) {
       return NextResponse.json(
         { success: false, error: 'Email ёки парол нотўғри' },
