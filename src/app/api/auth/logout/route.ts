@@ -6,21 +6,7 @@ import { hashToken } from '@/lib/auth/jwt'
 
 export async function POST(req: NextRequest) {
   try {
-    const refreshToken = req.cookies.get('refresh_token')?.value
-
-    if (refreshToken) {
-      const tokenHash = hashToken(refreshToken)
-
-      // Revoke token in DB
-      await prisma.refreshToken
-        .updateMany({
-          where: { tokenHash, revokedAt: null },
-          data: { revokedAt: new Date() },
-        })
-        .catch(() => {
-          // Ignore DB errors on logout — still clear cookies
-        })
-    }
+// Stateless JWT logout clears cookies
 
     const response = NextResponse.json({ success: true })
 

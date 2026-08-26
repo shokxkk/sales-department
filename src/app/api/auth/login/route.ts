@@ -129,27 +129,11 @@ export async function POST(req: NextRequest) {
       companyId: selectedCompanyId,
     })
 
-    // Persist refresh token hash in DB
-    const expiresAt = expiryStringToDate(process.env.JWT_REFRESH_EXPIRES_IN || '7d')
-
-    await prisma.$transaction([
-      // Store new refresh token
-      prisma.refreshToken.create({
-        data: {
-          userId: user.id,
-          tokenHash: refreshTokenHash,
-          companyId: selectedCompanyId,
-          expiresAt,
-          ipAddress: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip'),
-          userAgent: req.headers.get('user-agent'),
-        },
-      }),
-      // Update last login
-      prisma.user.update({
-        where: { id: user.id },
-        data: { lastLoginAt: new Date() },
-      }),
-    ])
+    // Update last login timestamp
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date() },
+    })
 
     // Set secure HttpOnly refresh token cookie
     const response = NextResponse.json({

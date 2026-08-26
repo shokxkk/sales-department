@@ -34,37 +34,22 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const tokenHash = hashToken(refreshToken)
-
-    // Look up in DB — must exist and not be revoked
-    const storedToken = await prisma.refreshToken.findUnique({
-      where: { tokenHash },
+    // Look up user from JWT payload
+    const user = await prisma.user.findUnique({
+      where: { id: payload.sub },
       include: {
-        user: {
-          include: {
-            companyUsers: {
-              where: {
-                companyId: payload.companyId || undefined,
-                isActive: true,
-              },
-            },
+        companyUsers: {
+          where: {
+            companyId: payload.companyId || undefined,
+            isActive: true,
           },
         },
       },
     })
 
-    if (!storedToken || storedToken.revokedAt || storedToken.expiresAt < new Date()) {
+    if (!user || !user.isActive) {
       return NextResponse.json(
-        { success: false, error: 'Refresh token нотўғри ёки бекор қилинган' },
-        { status: 401 }
-      )
-    }
-
-    const { user } = storedToken
-
-    if (!user.isActive) {
-      return NextResponse.json(
-        { success: false, error: 'Фойдаланувчи блокланган' },
+        { success: false, error: 'Фойдаланувчи топилмади ёки блокланган' },
         { status: 401 }
       )
     }
@@ -85,33 +70,10 @@ export async function POST(req: NextRequest) {
     }
 
     const newAccessToken = await signAccessToken(tokenPayload)
-    const {
-      token: newRefreshToken,
-      hash: newRefreshTokenHash,
-    } = await signRefreshToken({
+    const { token: newRefreshToken } = await signRefreshToken({
       userId: user.id,
       companyId: payload.companyId,
     })
-
-    const expiresAt = expiryStringToDate(process.env.JWT_REFRESH_EXPIRES_IN || '7d')
-
-    // Rotate: revoke old, create new
-    await prisma.$transaction([
-      prisma.refreshToken.update({
-        where: { id: storedToken.id },
-        data: { revokedAt: new Date() },
-      }),
-      prisma.refreshToken.create({
-        data: {
-          userId: user.id,
-          tokenHash: newRefreshTokenHash,
-          companyId: payload.companyId,
-          expiresAt,
-          ipAddress: req.headers.get('x-forwarded-for'),
-          userAgent: req.headers.get('user-agent'),
-        },
-      }),
-    ])
 
     const response = NextResponse.json({
       success: true,
