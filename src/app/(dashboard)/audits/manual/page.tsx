@@ -592,14 +592,14 @@ export default function ManualAuditPage() {
       const strengthsHtml = c.strengths?.length
         ? `<div class="section-block strengths-block">
             <div class="block-title">✅ Кучли томонлар</div>
-            ${c.strengths.map(s => `<p class="block-item">${s}</p>`).join('')}
+            ${c.strengths.map(s => `<p class="block-item">• ${s}</p>`).join('')}
           </div>`
         : ''
 
       const recsHtml = c.recommendations?.length
         ? `<div class="section-block recs-block">
             <div class="block-title">💡 Тавсиялар</div>
-            ${c.recommendations.map(r => `<p class="block-item">${r}</p>`).join('')}
+            ${c.recommendations.map(r => `<p class="block-item">• ${r}</p>`).join('')}
           </div>`
         : ''
 
@@ -651,93 +651,93 @@ export default function ManualAuditPage() {
 <title>OKK Hisoboti — ${report.managerName}</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 13px; color: #1a1a2e; background: #fff; }
-  @page { size: A4; margin: 18mm 15mm; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 15px; color: #1a1a2e; background: #fff; line-height: 1.6; }
+  @page { size: A4; margin: 15mm 12mm; }
   @media print { .no-print { display:none; } }
 
   /* ── Cover page ── */
-  .cover { min-height: 260px; background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f172a 100%); color:#fff; padding: 36px 40px 28px; border-radius: 0 0 24px 24px; margin-bottom: 32px; }
-  .cover-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:24px; }
-  .brand { font-size:22px; font-weight:900; letter-spacing:2px; color:#60a5fa; }
-  .brand-sub { font-size:10px; letter-spacing:3px; color:#94a3b8; margin-top:2px; }
-  .cover-badge { background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); border-radius:8px; padding:6px 14px; font-size:11px; font-weight:700; letter-spacing:2px; }
-  .cover-title { font-size:18px; font-weight:800; letter-spacing:1px; text-align:center; margin:12px 0 6px; }
-  .cover-subtitle { text-align:center; font-size:11px; color:#94a3b8; letter-spacing:2px; }
+  .cover { min-height: 240px; background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f172a 100%); color:#fff; padding: 32px 36px 24px; border-radius: 0 0 24px 24px; margin-bottom: 32px; }
+  .cover-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; }
+  .brand-logo-container { display:flex; align-items:center; gap:20px; }
+  .mm-logo-box { display:flex; align-items:center; gap:10px; background:rgba(255,255,255,0.95); padding:8px 16px; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.15); }
+  .brand { font-size:26px; font-weight:900; letter-spacing:2px; color:#60a5fa; line-height:1; }
+  .brand-sub { font-size:11px; letter-spacing:3px; color:#94a3b8; margin-top:4px; }
+  .cover-badge { background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); border-radius:10px; padding:8px 18px; font-size:14px; font-weight:800; letter-spacing:2px; }
+  .cover-title { font-size:24px; font-weight:900; letter-spacing:1px; text-align:center; margin:16px 0 8px; }
+  .cover-subtitle { text-align:center; font-size:13px; color:#94a3b8; letter-spacing:2px; font-weight:600; }
 
   /* ── Score circle ── */
-  .score-section { display:flex; flex-direction:column; align-items:center; margin: 24px 0; }
-  .score-circle { width:110px; height:110px; border-radius:50%; border: 5px solid ${scoreColor}; display:flex; flex-direction:column; align-items:center; justify-content:center; box-shadow: 0 0 24px ${scoreColor}55; }
-  .score-num { font-size:36px; font-weight:900; color:${scoreColor}; line-height:1; }
-  .score-max { font-size:11px; color:#64748b; margin-top:2px; }
-  .score-label { font-size:10px; color:#64748b; letter-spacing:2px; text-transform:uppercase; margin-top:8px; }
-  ${report.hasCriticalFails ? '.critical-badge { background:#fee2e2; border:2px solid #ef4444; color:#dc2626; border-radius:20px; padding:4px 16px; font-size:11px; font-weight:800; margin-top:10px; }' : ''}
+  .score-section { display:flex; flex-direction:column; align-items:center; margin: 28px 0; }
+  .score-circle { width:130px; height:130px; border-radius:50%; border: 6px solid ${scoreColor}; display:flex; flex-direction:column; align-items:center; justify-content:center; box-shadow: 0 0 28px ${scoreColor}55; }
+  .score-num { font-size:42px; font-weight:900; color:${scoreColor}; line-height:1; }
+  .score-max { font-size:13px; color:#64748b; margin-top:2px; font-weight:700; }
+  .score-label { font-size:12px; color:#64748b; letter-spacing:2px; text-transform:uppercase; margin-top:10px; font-weight:800; }
+  ${report.hasCriticalFails ? '.critical-badge { background:#fee2e2; border:2px solid #ef4444; color:#dc2626; border-radius:20px; padding:6px 20px; font-size:13px; font-weight:800; margin-top:12px; }' : ''}
 
   /* ── Info table ── */
-  .info-table { width:100%; border-collapse:collapse; margin-bottom:28px; }
-  .info-table td { padding:7px 12px; border:1px solid #e2e8f0; font-size:12px; vertical-align:top; }
-  .info-table .label { background:#f8fafc; font-weight:700; color:#475569; width:38%; }
+  .info-table { width:100%; border-collapse:collapse; margin-bottom:32px; }
+  .info-table td { padding:10px 14px; border:1px solid #cbd5e1; font-size:15px; vertical-align:middle; }
+  .info-table .label { background:#f8fafc; font-weight:700; color:#334155; width:38%; font-size:14px; }
   .info-table .value { color:#0f172a; font-weight:600; }
 
   /* ── Stats row ── */
-  .stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:28px; }
-  .stat-card { border:1px solid #e2e8f0; border-radius:8px; padding:10px; text-align:center; background:#f8fafc; }
-  .stat-card .st-label { font-size:9px; color:#64748b; text-transform:uppercase; letter-spacing:1px; }
-  .stat-card .st-val { font-size:20px; font-weight:900; color:#0f172a; margin-top:4px; }
+  .stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:32px; }
+  .stat-card { border:1px solid #cbd5e1; border-radius:10px; padding:12px; text-align:center; background:#f8fafc; }
+  .stat-card .st-label { font-size:11px; color:#64748b; text-transform:uppercase; letter-spacing:1px; font-weight:700; }
+  .stat-card .st-val { font-size:24px; font-weight:900; color:#0f172a; margin-top:4px; }
 
   /* ── Section title ── */
-  .section-title { font-size:15px; font-weight:800; color:#0f172a; padding:10px 0 6px; border-bottom:2px solid #e2e8f0; margin-bottom:16px; display:flex; justify-content:space-between; }
+  .section-title { font-size:18px; font-weight:900; color:#0f172a; padding:12px 0 8px; border-bottom:2.5px solid #0f172a; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; }
 
   /* ── Criterion block ── */
-  .criterion-page { page-break-inside:avoid; margin-bottom:20px; border:1px solid #e2e8f0; border-radius:10px; overflow:hidden; }
-  .criterion-page.critical { border-color:#fca5a5; }
-  .criterion-header { display:flex; justify-content:space-between; align-items:center; background:#f8fafc; padding:10px 16px; }
-  .criterion-title { font-size:13px; font-weight:800; color:#0f172a; }
-  .criterion-score { font-size:18px; font-weight:900; }
-  .criterion-bar-bg { height:5px; background:#e2e8f0; }
-  .criterion-bar-fill { height:5px; transition:width .3s; }
-  .criterion-status { font-size:11px; font-weight:700; padding:4px 16px; }
-  .criterion-explanation { font-size:11.5px; color:#475569; padding:6px 16px 0; line-height:1.6; }
-  .quote-block { background:#eff6ff; border-left:3px solid #3b82f6; margin:8px 16px; padding:6px 10px; font-size:11.5px; font-style:italic; color:#1e40af; border-radius:0 6px 6px 0; }
-  .timestamp { font-size:10px; font-weight:700; font-style:normal; }
-  .section-block { padding:8px 16px; }
-  .errors-block { background:#fff5f5; }
-  .strengths-block { background:#f0fdf4; }
-  .recs-block { background:#eff6ff; }
-  .block-title { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:1px; margin-bottom:4px; color:#475569; }
-  .block-item { font-size:11.5px; color:#374151; line-height:1.6; padding-left:4px; }
-  .muted { color:#94a3b8; font-size:11px; font-style:italic; }
+  .criterion-page { page-break-inside:avoid; margin-bottom:24px; border:1.5px solid #cbd5e1; border-radius:12px; overflow:hidden; }
+  .criterion-page.critical { border-color:#ef4444; border-width:2px; }
+  .criterion-header { display:flex; justify-content:space-between; align-items:center; background:#f8fafc; padding:12px 18px; border-bottom:1px solid #e2e8f0; }
+  .criterion-title { font-size:17px; font-weight:800; color:#0f172a; }
+  .criterion-score { font-size:22px; font-weight:900; }
+  .criterion-bar-bg { height:6px; background:#e2e8f0; }
+  .criterion-bar-fill { height:6px; transition:width .3s; }
+  .criterion-status { font-size:14px; font-weight:800; padding:6px 18px; }
+  .criterion-explanation { font-size:15px; color:#334155; padding:8px 18px 4px; line-height:1.6; font-weight:500; }
+  .quote-block { background:#eff6ff; border-left:4px solid #3b82f6; margin:10px 18px; padding:10px 14px; font-size:15px; font-style:italic; color:#1e40af; border-radius:0 8px 8px 0; font-weight:500; }
+  .timestamp { font-size:12px; font-weight:700; font-style:normal; }
+  .section-block { padding:10px 18px; }
+  .errors-block { background:#fff5f5; border-top:1px solid #fee2e2; }
+  .strengths-block { background:#f0fdf4; border-top:1px solid #dcfce7; }
+  .recs-block { background:#eff6ff; border-top:1px solid #dbeafe; }
+  .block-title { font-size:14px; font-weight:800; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px; color:#1e293b; }
+  .block-item { font-size:15px; color:#1e293b; line-height:1.6; padding-left:4px; font-weight:500; }
+  .muted { color:#94a3b8; font-size:13px; font-style:italic; }
 
   /* ── Summary sections ── */
-  .two-col { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px; }
-  .summary-block { border-radius:8px; padding:14px; }
-  .summary-block.green { background:#f0fdf4; border:1px solid #86efac; }
-  .summary-block.red { background:#fff5f5; border:1px solid #fca5a5; }
-  .summary-block.blue { background:#eff6ff; border:1px solid #93c5fd; }
-  .summary-block.purple { background:#faf5ff; border:1px solid #c4b5fd; }
-  .summary-block h4 { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; }
-  .summary-block p, .summary-block li { font-size:11.5px; color:#374151; line-height:1.6; }
-  .summary-block ul { padding-left:14px; }
+  .two-col { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-bottom:24px; }
+  .summary-block { border-radius:12px; padding:18px; }
+  .summary-block.green { background:#f0fdf4; border:1.5px solid #86efac; }
+  .summary-block.red { background:#fff5f5; border:1.5px solid #fca5a5; }
+  .summary-block.blue { background:#eff6ff; border:1.5px solid #93c5fd; }
+  .summary-block.purple { background:#faf5ff; border:1.5px solid #c4b5fd; }
+  .summary-block h4 { font-size:16px; font-weight:900; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; }
+  .summary-block p, .summary-block li { font-size:15px; color:#1e293b; line-height:1.6; font-weight:500; }
+  .summary-block ul { padding-left:18px; }
 
   /* ── Business analysis ── */
-  .biz-item { margin-bottom:12px; border:1px solid #e2e8f0; border-radius:6px; overflow:hidden; }
-  .biz-label { background:#f1f5f9; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:1px; padding:5px 10px; color:#475569; }
-  .biz-item p { font-size:11.5px; color:#374151; padding:8px 10px; line-height:1.6; }
+  .biz-item { margin-bottom:14px; border:1.5px solid #cbd5e1; border-radius:8px; overflow:hidden; }
+  .biz-label { background:#f1f5f9; font-size:13px; font-weight:800; text-transform:uppercase; letter-spacing:1px; padding:7px 14px; color:#334155; border-bottom:1px solid #cbd5e1; }
+  .biz-item p { font-size:15px; color:#1e293b; padding:10px 14px; line-height:1.6; font-weight:500; }
 
-  /* ── Signature block ── */
-  .sig-section { margin-top:32px; border-top:2px solid #e2e8f0; padding-top:20px; }
-  .sig-title { font-size:14px; font-weight:800; text-align:center; margin-bottom:20px; color:#0f172a; }
-  .sig-grid { display:grid; grid-template-columns:1fr 1fr; gap:30px; }
-  .sig-box { border:1px solid #e2e8f0; border-radius:8px; padding:16px; }
-  .sig-box-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:#64748b; margin-bottom:6px; }
-  .sig-box-name { font-size:13px; font-weight:700; color:#0f172a; margin-bottom:4px; }
-  .sig-box-role { font-size:11px; color:#64748b; margin-bottom:16px; }
-  .sig-line { border-top:1px solid #0f172a; margin-top:30px; padding-top:4px; font-size:10px; color:#94a3b8; text-align:center; }
+  /* ── Copyright Section ── */
+  .copyright-section { margin-top:36px; padding:22px 24px; background:#f8fafc; border:1.5px solid #cbd5e1; border-radius:14px; page-break-inside:avoid; }
+  .copyright-title { font-size:17px; font-weight:900; color:#0f172a; margin-bottom:8px; border-bottom:2px solid #cbd5e1; padding-bottom:6px; }
+  .copyright-sub { font-size:14px; font-weight:800; color:#1e293b; margin-bottom:12px; }
+  .copyright-p { font-size:13px; color:#334155; line-height:1.6; margin-bottom:10px; font-weight:500; }
+  .copyright-list { font-size:13px; color:#334155; line-height:1.6; padding-left:24px; margin-bottom:10px; list-style-type:disc; font-weight:500; }
+  .copyright-prohibited { font-size:13px; font-weight:800; color:#dc2626; margin-bottom:10px; }
 
   /* ── Footer ── */
-  .footer { text-align:center; font-size:10px; color:#94a3b8; margin-top:24px; padding-top:12px; border-top:1px solid #e2e8f0; }
+  .footer { text-align:center; font-size:12px; color:#64748b; margin-top:28px; padding-top:14px; border-top:1.5px solid #e2e8f0; font-weight:600; }
 
   /* ── Print button ── */
-  .print-btn { position:fixed; top:16px; right:16px; background:#2563eb; color:#fff; border:none; border-radius:10px; padding:10px 22px; font-size:13px; font-weight:700; cursor:pointer; z-index:999; box-shadow:0 4px 16px rgba(37,99,235,.3); }
+  .print-btn { position:fixed; top:16px; right:16px; background:#2563eb; color:#fff; border:none; border-radius:10px; padding:12px 26px; font-size:15px; font-weight:800; cursor:pointer; z-index:999; box-shadow:0 4px 16px rgba(37,99,235,.3); }
   .print-btn:hover { background:#1d4ed8; }
 </style>
 </head>
@@ -746,10 +746,30 @@ export default function ManualAuditPage() {
 
 <div class="cover">
   <div class="cover-top">
-    <div>
-      <div class="brand">Fraganus AI</div>
-      <div class="brand-sub">AI SALES INTELLIGENCE</div>
+    <div class="brand-logo-container">
+      <!-- Marketing Markazi Logo SVG -->
+      <div class="mm-logo-box">
+        <svg width="45" height="30" viewBox="0 0 200 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M 40 45 C 20 60, 20 80, 45 90 C 70 100, 95 85, 105 70 L 85 55 C 75 65, 60 75, 45 70 C 35 65, 35 55, 45 45 Z" fill="#E5A800"/>
+          <circle cx="75" cy="50" r="22" fill="#E5A800"/>
+          <path d="M 160 45 C 180 60, 180 80, 155 90 C 130 100, 105 85, 95 70 L 115 55 C 125 65, 140 75, 155 70 C 165 65, 165 55, 155 45 Z" fill="#00205B"/>
+          <circle cx="125" cy="50" r="22" fill="#00205B"/>
+        </svg>
+        <div style="display:flex; flex-direction:column;">
+          <span style="font-size:15px; font-weight:900; color:#00205B; line-height:1; letter-spacing:0.5px;">Marketing</span>
+          <span style="font-size:15px; font-weight:900; color:#E5A800; line-height:1; letter-spacing:0.5px; margin-top:2px;">Markazi</span>
+        </div>
+      </div>
+
+      <div style="height:36px; width:1.5px; background:rgba(255,255,255,0.25);"></div>
+
+      <!-- Fraganus AI -->
+      <div>
+        <div class="brand">Fraganus <span style="color:#d8ff38;">AI</span></div>
+        <div class="brand-sub">AI SALES INTELLIGENCE</div>
+      </div>
     </div>
+
     <div class="cover-badge">ОКК ҲИСОБОТИ</div>
   </div>
   <div class="cover-title">«СИФАТ НАЗОРАТИ» ТИЗИМИ</div>
@@ -785,7 +805,7 @@ export default function ManualAuditPage() {
   <div class="stat-card"><div class="st-label">Умумий балл</div><div class="st-val" style="color:${scoreColor}">${report.totalScore}/${report.maxScore}</div></div>
 </div>
 
-<div class="section-title">📋 ОКК МЕЗОНЛАРИ БЎЙИЧА БАТАФСИЛ ТАҲЛИЛ <span style="font-size:11px;font-weight:600;color:#64748b">${report.criteria?.length || 0} та мезон</span></div>
+<div class="section-title">📋 ОКК МЕЗОНЛАРИ БЎЙИЧА БАТАФСИЛ ТАҲЛИЛ <span style="font-size:13px;font-weight:700;color:#64748b">${report.criteria?.length || 0} та мезон</span></div>
 
 ${criterionHtml}
 
@@ -819,8 +839,39 @@ ${businessHtml ? `
 <div class="section-title" style="margin-top:24px">📊 БИЗНЕС ТАҲЛИЛ ВА ТУШУНЧАЛАР</div>
 ${businessHtml}` : ''}
 
+<!-- ── COPYRIGHT & INTELLECTUAL PROPERTY SECTION ── -->
+<div class="copyright-section">
+  <div class="copyright-title">Marketing Markazi Fraganus AI — Муаллифлик ҳуқуқи</div>
+  <div class="copyright-sub">© 2026 Marketing Markazi. Барча ҳуқуқлар ҳимояланган.</div>
+  <p class="copyright-p">
+    Fraganus AI дастурий маҳсулоти, унинг архитектураси, дастурий коди, функционал имкониятлари, сунъий интеллект асосидаги ечимлари, интерфейси, дизайни, алгоритмлари ва бошқа таркибий қисмлари Marketing Markaziнинг интеллектуал мулки ҳисобланади.
+  </p>
+  <p class="copyright-p">
+    Fraganus AI мижозларга фойдаланиш ҳуқуқи асосида тақдим этилади. Дастурдан фойдаланиш ҳуқуқининг берилиши дастурга бўлган муаллифлик ёки мулкий ҳуқуқларнинг бошқа шахс ёки ташкилотга ўтишини англатмайди.
+  </p>
+  <p class="copyright-p" style="font-weight:700; color:#0f172a;">
+    Marketing Markazi’нинг олдиндан ёзма розилигисиз Fraganus AI дастурини ёки унинг алоҳида қисмларини:
+  </p>
+  <ul class="copyright-list">
+    <li>нусхалаш;</li>
+    <li>қайта сотиш;</li>
+    <li>учинчи шахсларга тарқатиш;</li>
+    <li>ўзгартириш ёки қайта ишлаш;</li>
+    <li>дастурий кодини олишга ёки таҳлил қилишга уриниш;</li>
+    <li>бошқа маҳсулот яратиш учун тўлиқ ёки қисман кўчириш;</li>
+    <li>ўз номи ёки бошқа бренд остида тарқатиш</li>
+  </ul>
+  <p class="copyright-prohibited">ТАҚИҚЛАНАДИ.</p>
+  <p class="copyright-p">
+    Fraganus AI — Marketing Markazi томонидан ишлаб чиқилган ва унга тегишли интеллектуал мулк ҳисобланади.
+  </p>
+  <div style="font-size:13px; font-weight:800; color:#0f172a; margin-top:10px; border-top:1px solid #cbd5e1; padding-top:8px;">
+    © 2026 Marketing Markazi. All rights reserved.
+  </div>
+</div>
+
 <div class="footer">
-  Ҳисобот яратилди: ${dateStr} · Fraganus AI Sales Intelligence System · ОКК версияси 2.0
+  Ҳисобот яратилди: ${dateStr} · Marketing Markazi Fraganus AI Sales Intelligence System · ОКК версияси 2.0
 </div>
 
 <script>
