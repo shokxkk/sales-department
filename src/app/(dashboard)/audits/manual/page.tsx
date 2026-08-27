@@ -445,7 +445,21 @@ export default function ManualAuditPage() {
   useEffect(() => {
     fetch('/api/auth/me')
       .then(r => r.json())
-      .then(d => d.success && d.user.companyId && setCompanyId(d.user.companyId))
+      .then(d => {
+        if (d.success) {
+          if (d.user.companyId) {
+            setCompanyId(d.user.companyId)
+          } else if (d.user.role === 'SUPER_ADMIN') {
+            fetch('/api/admin/companies')
+              .then(res => res.json())
+              .then(cData => {
+                if (cData.success && cData.data?.length > 0) {
+                  setCompanyId(cData.data[0].id)
+                }
+              })
+          }
+        }
+      })
   }, [])
 
   const handleFile = (file: File) => {
