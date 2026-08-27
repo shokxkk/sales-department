@@ -32,6 +32,8 @@ import {
   PlusCircle,
   Trash2,
 } from 'lucide-react'
+import { MARKETING_MARKAZI_LOGO_BASE64 } from '@/lib/constants/marketing-markazi-logo'
+import { AmoCRMFilterSync, AmoCRMFilterState } from '@/components/ui/amocrm-filter-sync'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 
@@ -747,21 +749,11 @@ export default function ManualAuditPage() {
 <div class="cover">
   <div class="cover-top">
     <div class="brand-logo-container">
-      <!-- Marketing Markazi Logo SVG -->
-      <div class="mm-logo-box">
-        <svg width="45" height="30" viewBox="0 0 200 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M 40 45 C 20 60, 20 80, 45 90 C 70 100, 95 85, 105 70 L 85 55 C 75 65, 60 75, 45 70 C 35 65, 35 55, 45 45 Z" fill="#E5A800"/>
-          <circle cx="75" cy="50" r="22" fill="#E5A800"/>
-          <path d="M 160 45 C 180 60, 180 80, 155 90 C 130 100, 105 85, 95 70 L 115 55 C 125 65, 140 75, 155 70 C 165 65, 165 55, 155 45 Z" fill="#00205B"/>
-          <circle cx="125" cy="50" r="22" fill="#00205B"/>
-        </svg>
-        <div style="display:flex; flex-direction:column;">
-          <span style="font-size:15px; font-weight:900; color:#00205B; line-height:1; letter-spacing:0.5px;">Marketing</span>
-          <span style="font-size:15px; font-weight:900; color:#E5A800; line-height:1; letter-spacing:0.5px; margin-top:2px;">Markazi</span>
-        </div>
-      </div>
+      <!-- Marketing Markazi Official 1:1 Logo -->
+      <img src="${MARKETING_MARKAZI_LOGO_BASE64}" alt="Marketing Markazi" style="height: 48px; width: auto; object-fit: contain; background: #ffffff; padding: 6px 14px; border-radius: 12px; box-shadow: 0 4px 14px rgba(0,0,0,0.18);" />
 
       <div style="height:36px; width:1.5px; background:rgba(255,255,255,0.25);"></div>
+
 
       <!-- Fraganus AI -->
       <div>

@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { CheckCircle, XCircle, Minus, AlertTriangle, Briefcase, TrendingUp } from 'lucide-react'
 import { formatDateTime, formatDuration } from '@/lib/utils'
+import { MARKETING_MARKAZI_LOGO_BASE64 } from '@/lib/constants/marketing-markazi-logo'
+
 
 type CriterionStatus = 'PASS' | 'PARTIAL' | 'FAIL' | 'NOT_APPLICABLE' | null
 
@@ -142,21 +144,16 @@ export default function AuditPdfPage() {
       {/* Header */}
       <div className="border-b-2 border-gray-900 pb-5 mb-8 flex justify-between items-center">
         <div className="flex items-center gap-5">
-          {/* Marketing Markazi Logo */}
-          <div className="flex items-center gap-2.5 bg-gray-50 border border-gray-200 px-3.5 py-2 rounded-xl shadow-sm">
-            <svg width="45" height="30" viewBox="0 0 200 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M 40 45 C 20 60, 20 80, 45 90 C 70 100, 95 85, 105 70 L 85 55 C 75 65, 60 75, 45 70 C 35 65, 35 55, 45 45 Z" fill="#E5A800"/>
-              <circle cx="75" cy="50" r="22" fill="#E5A800"/>
-              <path d="M 160 45 C 180 60, 180 80, 155 90 C 130 100, 105 85, 95 70 L 115 55 C 125 65, 140 75, 155 70 C 165 65, 165 55, 155 45 Z" fill="#00205B"/>
-              <circle cx="125" cy="50" r="22" fill="#00205B"/>
-            </svg>
-            <div className="flex flex-col">
-              <span className="text-sm font-black text-[#00205B] leading-none tracking-tight">Marketing</span>
-              <span className="text-sm font-black text-[#E5A800] leading-none tracking-tight mt-0.5">Markazi</span>
-            </div>
-          </div>
+          {/* Marketing Markazi Official 1:1 Logo */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={MARKETING_MARKAZI_LOGO_BASE64}
+            alt="Marketing Markazi"
+            className="h-12 w-auto object-contain bg-white px-3.5 py-1.5 rounded-xl shadow-sm border border-gray-200"
+          />
 
           <div className="h-8 w-0.5 bg-gray-300"></div>
+
 
           <div>
             <div className="flex items-center gap-2">
