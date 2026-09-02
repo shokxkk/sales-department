@@ -947,19 +947,19 @@ ${report.nextStep ? `
 
 ${report.idealScriptSuggestions?.length ? `
 <div class="summary-block green" style="margin-bottom:16px;border-color:#16a34a">
-  <h4 style="color:#16a34a">✨ Aisha AI Идеал Скрипт ва Сўзлашув Варианти</h4>
+  <h4 style="color:#16a34a">✨ Сўзлашув варианти</h4>
   ${report.idealScriptSuggestions.map(s => `
     <div style="margin-top:8px;padding:8px 12px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0">
       <div style="font-size:12px;color:#dc2626"><b>Мижоз эътирози:</b> «${s.customer_objection}»</div>
       <div style="font-size:12px;color:#d97706"><b>Менежер жавоби:</b> «${s.manager_answer}»</div>
-      <div style="font-size:13px;color:#15803d;font-weight:700;margin-top:4px"><b>✨ AI Идеал Скрипт:</b> ${s.ideal_ai_script}</div>
+      <div style="font-size:13px;color:#15803d;font-weight:700;margin-top:4px"><b>✨ AI Сўзлашув варианти:</b> ${s.ideal_ai_script}</div>
     </div>
   `).join('')}
 </div>` : ''}
 
 ${report.ropTrainingPlan ? `
 <div class="summary-block purple" style="margin-bottom:16px;border-color:#7c3aed">
-  <h4 style="color:#7c3aed">🎓 РОП учун Менежерни Ўқитиш ва Тренинг Харитаси</h4>
+  <h4 style="color:#7c3aed">🎓 Менежерга тавсия</h4>
   <p style="margin-bottom:4px"><b>Паст кўникма:</b> ${report.ropTrainingPlan.weak_skill}</p>
   <p style="margin-bottom:4px"><b>Рекомендуемый тренинг:</b> ${report.ropTrainingPlan.recommended_training}</p>
   <p><b>Ходимга топшириқ:</b> ${report.ropTrainingPlan.task_for_manager}</p>
@@ -1702,7 +1702,7 @@ ${generateRadarChartSVG(report.criteria, report.audioDurationSeconds > 0 ? `${Ma
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Sparkles size={16} className="text-emerald-400" />
-                  <h3 className="text-sm font-bold text-foreground">Aisha AI Идеал Скрипт ва Сўзлашув Варианти</h3>
+                  <h3 className="text-sm font-bold text-foreground">Сўзлашув варианти</h3>
                 </div>
                 <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
                   +90% сотув эҳтимоли
@@ -1732,7 +1732,7 @@ ${generateRadarChartSVG(report.criteria, report.audioDurationSeconds > 0 ? `${Ma
             <div className="rounded-2xl border border-purple-500/30 bg-gradient-to-r from-purple-950/20 via-card to-card p-5 space-y-3">
               <div className="flex items-center gap-2">
                 <GraduationCap size={18} className="text-purple-400" />
-                <h3 className="text-sm font-bold text-foreground">РОП учун Менежерни Ўқитиш ва Тренинг Харитаси</h3>
+                <h3 className="text-sm font-bold text-foreground">Менежерга тавсия</h3>
               </div>
               <div className="grid sm:grid-cols-3 gap-3">
                 <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/20">
