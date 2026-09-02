@@ -206,16 +206,37 @@ export async function POST(
       // Per-criterion results (9 sections)
       criteria: (analysisResult.criteria || []).map((c: any) => {
         const def = OKK_CRITERIA.find(o => o.code === c.criterion_code)
+        let nameUz = def?.nameUz || c.criterion_code || ''
+        if (c.criterion_code === 'greeting_hello' || nameUz.toLowerCase().includes('greeting_hello')) {
+          nameUz = '1. Саломлашиш ва идентификация'
+        }
+
+        let score = c.score ?? 0
+        let maxScore = c.max_score ?? def?.maxScore ?? 10
+        let status = c.status || (c.passed ? 'PASS' : 'FAIL')
+        let passed = c.passed ?? (score > 0)
+        let explanation = c.explanation || ''
+
+        // OKK Rule: If no objections occurred during call ("Эътирозлар бўлмади"), give FULL score (15/15)
+        if (c.criterion_code === 'objection_handling' || c.criterion_code === 'objections' || nameUz.includes('Эътироз')) {
+          if (status === 'NOT_APPLICABLE' || (score === 0 && (!c.errors || c.errors.length === 0 || explanation.toLowerCase().includes('бўлмади')))) {
+            score = maxScore || 15
+            status = 'PASS'
+            passed = true
+            explanation = 'Суҳбат давомида мижоз томонидан эътирозлар билдирилмади (Эътирозсиз суҳбат — 15/15 балл).'
+          }
+        }
+
         return {
           code: c.criterion_code,
-          nameUz: def?.nameUz || c.criterion_code,
-          score: c.score ?? 0,
-          maxScore: c.max_score ?? def?.maxScore ?? 10,
-          status: c.status || (c.passed ? 'PASS' : 'FAIL'),
-          passed: c.passed,
+          nameUz,
+          score,
+          maxScore,
+          status,
+          passed,
           isCritical: def?.isCritical ?? false,
           criticalFail: c.criticalFail ?? false,
-          explanation: c.explanation || '',
+          explanation,
           strengths: c.strengths || [],
           errors: c.errors || [],
           recommendations: c.recommendations || [],

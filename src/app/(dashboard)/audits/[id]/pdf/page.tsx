@@ -233,7 +233,7 @@ export default function AuditPdfPage() {
           <img
             src={MARKETING_MARKAZI_LOGO_BASE64}
             alt="Marketing Markazi"
-            className="h-12 w-auto object-contain bg-white px-3.5 py-1.5 rounded-xl shadow-sm border border-gray-200"
+            className="h-16 w-auto object-contain"
           />
 
           <div className="h-8 w-0.5 bg-gray-300"></div>
@@ -480,7 +480,7 @@ export default function AuditPdfPage() {
                 <div key={c.id} className="flex items-center gap-2 text-xs">
                   <span className="text-gray-400 w-4 text-right font-mono">{i + 1}.</span>
                   <span className="font-semibold text-gray-800 flex-1 truncate">
-                    {(c.criterion?.nameUz || c.criterionCode).replace(/^\d+\.\s*/, '')}
+                    {(c.criterion?.nameUz || c.criterionCode).replace(/greeting_hello/gi, 'Саломлашиш ва идентификация').replace(/^\d+\.\s*/, '')}
                   </span>
                   <div className="w-32 h-2 rounded-full bg-gray-200 overflow-hidden shrink-0">
                     <div className={cn('h-full rounded-full', colorCls)} style={{ width: `${pct}%` }} />

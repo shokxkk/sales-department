@@ -193,7 +193,7 @@ function CriterionCard({
 
         {/* Name */}
         <span className="flex-1 text-sm font-semibold text-foreground truncate">
-          {c.nameUz}
+          {String(c.nameUz || '').replace(/greeting_hello/gi, 'Саломлашиш ва идентификация')}
         </span>
 
         {/* Critical badge */}
@@ -856,7 +856,7 @@ export default function ManualAuditPage() {
   <div class="cover-top">
     <div class="brand-logo-container">
       <!-- Marketing Markazi Official 1:1 Logo -->
-      <img src="${MARKETING_MARKAZI_LOGO_BASE64}" alt="Marketing Markazi" style="height: 48px; width: auto; object-fit: contain; background: #ffffff; padding: 6px 14px; border-radius: 12px; box-shadow: 0 4px 14px rgba(0,0,0,0.18);" />
+      <img src="${MARKETING_MARKAZI_LOGO_BASE64}" alt="Marketing Markazi" style="height: 68px; width: auto; object-fit: contain; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.3));" />
 
       <div style="height:36px; width:1.5px; background:rgba(255,255,255,0.25);"></div>
 
@@ -947,7 +947,7 @@ ${businessHtml}` : ''}
       const pct = Math.round((cScore / cMax) * 100)
       const color = pct >= 80 ? '#16a34a' : pct >= 60 ? '#ca8a04' : '#dc2626'
       const rawName = c.nameUz || (c as any).name || (c as any).criterionCode || (c as any).code || `Mezon ${i+1}`
-      const name = String(rawName).replace(/^\d+\.\s*/, '')
+      const name = String(rawName).replace(/greeting_hello/gi, 'Саломлашиш ва идентификация').replace(/^\d+\.\s*/, '')
       return `
         <div class="bar-row">
           <span style="color:#94a3b8;width:16px">${i + 1}.</span>

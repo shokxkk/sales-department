@@ -188,18 +188,33 @@ export async function analyzeCallDirectly(params: {
         criterionResults: {
           create: (auditResult.criteria || []).map((cr) => {
             const criterion = criteria.find((c) => c.code === cr.criterion_code)
+            let score = cr.score
+            let status = cr.status
+            let passed = cr.passed
+            let explanation = cr.explanation
+
+            // OKK Rule: If no objections occurred during call ("Эътирозлар бўлмади"), give FULL score (15/15)
+            if (cr.criterion_code === 'objection_handling' || cr.criterion_code === 'objections' || criterion?.nameUz.includes('Эътироз')) {
+              if (status === 'NOT_APPLICABLE' || (score === 0 && (!cr.errors || cr.errors.length === 0 || explanation?.toLowerCase().includes('бўлмади')))) {
+                score = cr.max_score || criterion?.maxScore || 15
+                status = 'PASS' as any
+                passed = true
+                explanation = 'Суҳбат давомида мижоз томонидан эътирозлар билдирилмади (Эътирозсиз суҳбат — 15/15 балл).'
+              }
+            }
+
             return {
               criterionId: criterion?.id || '',
               criterionCode: cr.criterion_code,
-              aiScore: cr.score,
-              finalScore: cr.score,
+              aiScore: score,
+              finalScore: score,
               maxScore: cr.max_score,
-              passed: cr.passed,
-              explanationUz: cr.explanation,
+              passed,
+              explanationUz: explanation,
               evidenceTimestamp: cr.evidence_timestamp || '00:05',
               evidenceQuote: cr.evidence_quote || '',
               // OKK: new criterion-level fields
-              status: (cr.status ?? null) as any,
+              status: (status ?? null) as any,
               strengthsJson: cr.strengths ? (cr.strengths as Prisma.InputJsonValue) : Prisma.JsonNull,
               errorsJson: cr.errors ? (cr.errors as Prisma.InputJsonValue) : Prisma.JsonNull,
               recommendationsJson: cr.recommendations ? (cr.recommendations as Prisma.InputJsonValue) : Prisma.JsonNull,
