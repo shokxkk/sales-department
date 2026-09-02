@@ -99,6 +99,17 @@ const AuditResultSchema = z.object({
   rop_recommendation: z.string().optional(),
   has_critical_fails: z.boolean().optional(),
   business_analysis: BusinessAnalysisSchema,
+  rop_training_plan: z.object({
+    weak_skill: z.string(),
+    recommended_training: z.string(),
+    task_for_manager: z.string(),
+  }).optional(),
+  ideal_script_suggestions: z.array(z.object({
+    customer_objection: z.string(),
+    manager_answer: z.string(),
+    ideal_ai_script: z.string(),
+    conversion_boost: z.string().optional(),
+  })).optional(),
 })
 
 // ─── Provider Implementation ──────────────────────────────────────
@@ -455,7 +466,20 @@ JSON структураси:
     "customerRequest": "Маҳсулот нархини сўради",
     "customerSentiment": "Позитив, қизиқиш бор",
     "managementRecommendations": "Менежерга тренинг тавсия этилади"
-  }
+  },
+  "rop_training_plan": {
+    "weak_skill": "Эътирозлар билан ишлаш",
+    "recommended_training": "Нарх ва қийматни солиштириш бўйича 15 дақиқалик ролли ўйин (Role-play) тренинг",
+    "task_for_manager": "Камида 3 та қиймат аргументини ёдлаб олиш ва амалда қўллаш"
+  },
+  "ideal_script_suggestions": [
+    {
+      "customer_objection": "Нархи жуда қиммат экан",
+      "manager_answer": "Бизда шунақа нарх, сифатли нарса арзон бўлмайди",
+      "ideal_ai_script": "Тушунаман, нарх жуда муҳим масала. Лекин бизнинг хизмат ичида 1 йиллик кафолат ва бепул етказиш киритилган, бу сизга узоқ муддатда 20% тежаш беради.",
+      "conversion_boost": "+90% сотув эҳтимоли"
+    }
+  ]
 }`
 
     const userPrompt = `Қўнғироқни таҳлил қилинг:

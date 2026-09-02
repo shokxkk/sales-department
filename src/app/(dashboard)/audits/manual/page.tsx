@@ -31,6 +31,8 @@ import {
   Save,
   PlusCircle,
   Trash2,
+  Sparkles,
+  GraduationCap,
 } from 'lucide-react'
 import { MARKETING_MARKAZI_LOGO_BASE64 } from '@/lib/constants/marketing-markazi-logo'
 import { AmoCRMFilterSync, AmoCRMFilterState } from '@/components/ui/amocrm-filter-sync'
@@ -99,6 +101,17 @@ interface ManualAuditReport {
   importantQuotes: Array<{ speaker: string; timestamp: string; text: string }>
   customerNeeds: string[]
   objections: Array<{ category: string; quote: string; timestamp: string; handled: boolean }>
+  ropTrainingPlan?: {
+    weak_skill: string
+    recommended_training: string
+    task_for_manager: string
+  } | null
+  idealScriptSuggestions?: Array<{
+    customer_objection: string
+    manager_answer: string
+    ideal_ai_script: string
+    conversion_boost?: string
+  }>
 }
 
 // ─── Helpers ───────────────────────────────────────────────────────
@@ -932,6 +945,26 @@ ${report.nextStep ? `
   <p>${report.nextStep}</p>
 </div>` : ''}
 
+${report.idealScriptSuggestions?.length ? `
+<div class="summary-block green" style="margin-bottom:16px;border-color:#16a34a">
+  <h4 style="color:#16a34a">✨ Aisha AI Идеал Скрипт ва Сўзлашув Варианти</h4>
+  ${report.idealScriptSuggestions.map(s => `
+    <div style="margin-top:8px;padding:8px 12px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0">
+      <div style="font-size:12px;color:#dc2626"><b>Мижоз эътирози:</b> «${s.customer_objection}»</div>
+      <div style="font-size:12px;color:#d97706"><b>Менежер жавоби:</b> «${s.manager_answer}»</div>
+      <div style="font-size:13px;color:#15803d;font-weight:700;margin-top:4px"><b>✨ AI Идеал Скрипт:</b> ${s.ideal_ai_script}</div>
+    </div>
+  `).join('')}
+</div>` : ''}
+
+${report.ropTrainingPlan ? `
+<div class="summary-block purple" style="margin-bottom:16px;border-color:#7c3aed">
+  <h4 style="color:#7c3aed">🎓 РОП учун Менежерни Ўқитиш ва Тренинг Харитаси</h4>
+  <p style="margin-bottom:4px"><b>Паст кўникма:</b> ${report.ropTrainingPlan.weak_skill}</p>
+  <p style="margin-bottom:4px"><b>Рекомендуемый тренинг:</b> ${report.ropTrainingPlan.recommended_training}</p>
+  <p><b>Ходимга топшириқ:</b> ${report.ropTrainingPlan.task_for_manager}</p>
+</div>` : ''}
+
 ${businessHtml ? `
 <div class="section-title" style="margin-top:24px">📊 БИЗНЕС ТАҲЛИЛ ВА ТУШУНЧАЛАР</div>
 ${businessHtml}` : ''}
@@ -1660,6 +1693,61 @@ ${generateRadarChartSVG(report.criteria, report.audioDurationSeconds > 0 ? `${Ma
                   {report.nextStep || 'Кейинги қадам келишилмади'}
                 </p>
               )}
+            </div>
+          )}
+
+          {/* ─── Ideal AI Script Suggestion Card ─── */}
+          {report.idealScriptSuggestions && report.idealScriptSuggestions.length > 0 && (
+            <div className="rounded-2xl border border-emerald-500/30 bg-gradient-to-r from-emerald-950/20 via-card to-card p-5 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Sparkles size={16} className="text-emerald-400" />
+                  <h3 className="text-sm font-bold text-foreground">Aisha AI Идеал Скрипт ва Сўзлашув Варианти</h3>
+                </div>
+                <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                  +90% сотув эҳтимоли
+                </span>
+              </div>
+              {report.idealScriptSuggestions.map((s, idx) => (
+                <div key={idx} className="p-3.5 rounded-xl bg-emerald-500/5 border border-emerald-500/20 space-y-2">
+                  <div className="flex items-start gap-2 text-xs">
+                    <span className="font-bold text-red-400 shrink-0">Мижоз эътирози:</span>
+                    <span className="text-muted-foreground italic">«{s.customer_objection}»</span>
+                  </div>
+                  <div className="flex items-start gap-2 text-xs">
+                    <span className="font-bold text-amber-400 shrink-0">Менежер жавоби:</span>
+                    <span className="text-muted-foreground/80">«{s.manager_answer}»</span>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-300 font-medium leading-relaxed">
+                    <span className="font-bold text-emerald-400 block mb-0.5">✨ AI Идеал Скрипт таклифи:</span>
+                    {s.ideal_ai_script}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* ─── ROP Training & Action Plan Card ─── */}
+          {report.ropTrainingPlan && (
+            <div className="rounded-2xl border border-purple-500/30 bg-gradient-to-r from-purple-950/20 via-card to-card p-5 space-y-3">
+              <div className="flex items-center gap-2">
+                <GraduationCap size={18} className="text-purple-400" />
+                <h3 className="text-sm font-bold text-foreground">РОП учун Менежерни Ўқитиш ва Тренинг Харитаси</h3>
+              </div>
+              <div className="grid sm:grid-cols-3 gap-3">
+                <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/20">
+                  <span className="text-[10px] font-bold text-purple-400 uppercase tracking-wider block mb-1">Паст кўникма</span>
+                  <p className="text-xs font-bold text-foreground">{report.ropTrainingPlan.weak_skill}</p>
+                </div>
+                <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20">
+                  <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wider block mb-1">Рекомендуемый тренинг</span>
+                  <p className="text-xs font-medium text-foreground">{report.ropTrainingPlan.recommended_training}</p>
+                </div>
+                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                  <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block mb-1">Ходимга топшириқ</span>
+                  <p className="text-xs font-medium text-foreground">{report.ropTrainingPlan.task_for_manager}</p>
+                </div>
+              </div>
             </div>
           )}
 

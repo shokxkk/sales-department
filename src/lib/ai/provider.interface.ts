@@ -110,6 +110,17 @@ export interface AuditAnalysisResult {
   rop_recommendation?: string    // ROP uchun alohida tavsiya
   has_critical_fails?: boolean   // any criterion has criticalFail=true
   business_analysis?: BusinessAnalysis
+  rop_training_plan?: {
+    weak_skill: string
+    recommended_training: string
+    task_for_manager: string
+  }
+  ideal_script_suggestions?: Array<{
+    customer_objection: string
+    manager_answer: string
+    ideal_ai_script: string
+    conversion_boost?: string
+  }>
 }
 
 export interface AIProvider {

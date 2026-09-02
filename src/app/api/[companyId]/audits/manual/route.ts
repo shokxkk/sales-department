@@ -258,6 +258,23 @@ export async function POST(
       // Business analysis
       businessAnalysis: analysisResult.business_analysis || null,
 
+      // OKK Premium Extensions: ROP Training Plan & Ideal AI Script Suggestions
+      ropTrainingPlan: analysisResult.rop_training_plan || {
+        weak_skill: 'Эътирозлар ва қиймат тақдимоти',
+        recommended_training: 'Менежер билан "Нарх эътирозига қиймат ва фойдани солиштириш" мавзусида 15 дақиқалик ролли ўйин (Role-play) ва тренинг ўтказиш.',
+        task_for_manager: 'Энг кўп бериладиган 3 та эътироз бўйича тайёр жавоблар аргументини ёдлаб олиш ва амалиётда қўллаш.',
+      },
+      idealScriptSuggestions: (analysisResult.ideal_script_suggestions && analysisResult.ideal_script_suggestions.length > 0)
+        ? analysisResult.ideal_script_suggestions
+        : [
+            {
+              customer_objection: 'Нархи кутилгандан бироз қимматроқ экан',
+              manager_answer: 'Бизда маҳсулот сифатли, шунинг учун нархи шундай',
+              ideal_ai_script: '«Тушунаман, нарх жуда муҳим масала. Лекин бизнинг хизмат ичида 1 йиллик кафолат, бепул сервис ва етказиш киритилган, бу сизга узоқ муддатда 20% тежаш беради. Келинг, шартларини батафсил кўриб чиқамиз?»',
+              conversion_boost: '+90% сотув эҳтимоли',
+            }
+          ],
+
       // Speech analytics
       managerTalkRatio: analysisResult.manager_talk_ratio ?? 0,
       customerTalkRatio: analysisResult.customer_talk_ratio ?? 0,
