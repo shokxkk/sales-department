@@ -869,7 +869,7 @@ export default function ManualAuditPage() {
   <div class="cover-top">
     <div class="brand-logo-container">
       <!-- Marketing Markazi Official 1:1 Logo -->
-      <img src="${MARKETING_MARKAZI_LOGO_BASE64}" alt="Marketing Markazi" style="height: 68px; width: auto; object-fit: contain; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.3));" />
+      <img src="${MARKETING_MARKAZI_LOGO_BASE64}" alt="Marketing Markazi" style="height: 110px; width: auto; object-fit: contain; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.3));" />
 
       <div style="height:36px; width:1.5px; background:rgba(255,255,255,0.25);"></div>
 

@@ -233,7 +233,7 @@ export default function AuditPdfPage() {
           <img
             src={MARKETING_MARKAZI_LOGO_BASE64}
             alt="Marketing Markazi"
-            className="h-16 w-auto object-contain"
+            className="h-28 w-auto object-contain"
           />
 
           <div className="h-8 w-0.5 bg-gray-300"></div>
