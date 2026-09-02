@@ -8,8 +8,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth, authErrorResponse, AuthError } from '@/lib/auth/server'
 import { AishaProvider } from '@/lib/ai/aisha.provider'
 
-// ── CRITICAL: allow up to 10 minutes for Aisha async polling on long calls ──
-export const maxDuration = 600
+// ── Vercel Hobby plan maxDuration limit: 300s (5 minutes) ──
+export const maxDuration = 300
 export const dynamic = 'force-dynamic'
 
 // OKK Criteria — 8 Official Call Center Standards (Marketing Markazi)

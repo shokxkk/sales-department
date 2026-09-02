@@ -45,3 +45,5 @@ prisma/*.db-journal
 # Testing
 coverage/
 .nyc_output/
+
+.vercel
