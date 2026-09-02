@@ -644,10 +644,10 @@ export default function ManualAuditPage() {
     }).join('')
 
     return `
-      <div style="border:1.5px solid #cbd5e1; border-radius:18px; padding:18px; background:#ffffff; max-width:380px; margin:20px auto; text-align:center; box-shadow:0 4px 16px rgba(0,0,0,0.04); font-family:sans-serif; page-break-inside:avoid;">
-        <div style="font-size:14px; font-weight:900; color:#0f172a; text-transform:uppercase; letter-spacing:0.8px;">MEZONLAR BO'YICHA</div>
-        <div style="font-size:12px; font-weight:600; color:#64748b; margin-top:2px; margin-bottom:12px;">Tahlil audio: sdelka • ${audioDurationStr}</div>
-        <svg width="300" height="300" viewBox="0 0 300 300" style="overflow:visible; display:block; margin:0 auto;">
+      <div style="border:1.5px solid #cbd5e1; border-radius:22px; padding:28px 24px; background:#ffffff; max-width:540px; margin:40px auto; text-align:center; box-shadow:0 6px 20px rgba(0,0,0,0.06); font-family:sans-serif; page-break-inside:avoid; break-inside:avoid;">
+        <div style="font-size:18px; font-weight:900; color:#0f172a; text-transform:uppercase; letter-spacing:1.2px; margin-bottom:4px;">MEZONLAR BO'YICHA</div>
+        <div style="font-size:13px; font-weight:600; color:#64748b; margin-bottom:20px;">Tahlil audio: sdelka • ${audioDurationStr}</div>
+        <svg width="440" height="440" viewBox="0 0 300 300" style="overflow:visible; display:block; margin:0 auto;">
           ${gridRings}
           ${axisLines}
           <polygon points="${valPoints}" fill="rgba(79, 70, 229, 0.3)" stroke="#4f46e5" stroke-width="2.5" stroke-linejoin="round" />
