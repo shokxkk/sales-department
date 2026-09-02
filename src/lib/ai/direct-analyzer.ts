@@ -174,7 +174,7 @@ export async function analyzeCallDirectly(params: {
         importantQuotesJson: auditResult.important_quotes || [],
         objectionsJson: auditResult.objections || [],
         customerNeedsJson: auditResult.customer_need || [],
-        nextStep: auditResult.next_step || 'Тижорий таклиф юбориш ва қайта қўнғироқ қилиш',
+        nextStep: auditResult.next_step || 'Эртага 11:00 да қайта қўнғироқ қилиш',
         // OKK: new fields
         hasCriticalFails,
         callResult: auditResult.call_result || null,

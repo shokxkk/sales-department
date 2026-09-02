@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { CheckCircle, XCircle, Minus, AlertTriangle, Briefcase, TrendingUp } from 'lucide-react'
-import { formatDateTime, formatDuration } from '@/lib/utils'
+import { cn, formatDateTime, formatDuration } from '@/lib/utils'
 import { MARKETING_MARKAZI_LOGO_BASE64 } from '@/lib/constants/marketing-markazi-logo'
 
 
@@ -139,6 +139,90 @@ export default function AuditPdfPage() {
     managementRecommendations: 'Бошқарув тавсиялари',
   }
 
+  const generateRadarChartSVG = (
+    criteria: Array<any>,
+    audioDurationStr: string = '5:19'
+  ) => {
+    const axes = [
+      { label: 'Саломлашиш', keywords: ['greeting_hello', 'greeting', 'саломлашиш', 'идентификация', '1.'] },
+      { label: 'Эҳтиёж', keywords: ['эҳтиёж', 'савол', 'need', '2.'] },
+      { label: 'Маҳсулот', keywords: ['маҳсулот', 'тақдимот', 'product', '3.'] },
+      { label: 'Эътироз', keywords: ['эътироз', 'нарх', 'objection', '4.'] },
+      { label: 'Босим', keywords: ['битим', 'якунлаш', 'қадам', 'close', '5.', '6.', 'босим'] },
+      { label: 'Кайфият', keywords: ['кайфият', 'мулоқот', 'эмпатия', 'mood', '7.'] },
+      { label: 'Фаоллик', keywords: ['фаоллик', 'диққат', 'узилиш', 'active', '8.', '9.'] }
+    ]
+
+    const scores = axes.map(axis => {
+      const matched = (criteria || []).filter(c => {
+        const name = String(c.criterion?.nameUz || c.criterionCode || '').toLowerCase()
+        return axis.keywords.some(k => name.includes(k.toLowerCase()))
+      })
+      if (matched.length > 0) {
+        const sumScore = matched.reduce((acc, c) => acc + (c.finalScore || 0), 0)
+        const sumMax = matched.reduce((acc, c) => acc + (c.maxScore || 10), 0)
+        return sumMax > 0 ? Math.min(1.0, Math.max(0.25, sumScore / sumMax)) : 0.75
+      }
+      return 0.75
+    })
+
+    const cx = 150, cy = 150, r = 85
+    const n = axes.length
+    const angleStep = (Math.PI * 2) / n
+
+    const gridRings = [0.2, 0.4, 0.6, 0.8, 1.0].map(level => {
+      const pts = axes.map((_, i) => {
+        const angle = -Math.PI / 2 + i * angleStep
+        const x = cx + r * level * Math.cos(angle)
+        const y = cy + r * level * Math.sin(angle)
+        return `${x.toFixed(1)},${y.toFixed(1)}`
+      }).join(' ')
+      return `<polygon points="${pts}" fill="none" stroke="#cbd5e1" stroke-width="1.2" stroke-dasharray="${level === 1 ? 'none' : '2,2'}" />`
+    }).join('')
+
+    let axisLines = ''
+    let labelTags = ''
+    axes.forEach((axis, i) => {
+      const angle = -Math.PI / 2 + i * angleStep
+      const xEnd = cx + r * Math.cos(angle)
+      const yEnd = cy + r * Math.sin(angle)
+      axisLines += `<line x1="${cx}" y1="${cy}" x2="${xEnd.toFixed(1)}" y2="${yEnd.toFixed(1)}" stroke="#cbd5e1" stroke-width="1.2" />`
+
+      const xLbl = cx + (r + 26) * Math.cos(angle)
+      const yLbl = cy + (r + 14) * Math.sin(angle)
+      const anchor = Math.abs(xLbl - cx) < 15 ? 'middle' : xLbl > cx ? 'start' : 'end'
+      labelTags += `<text x="${xLbl.toFixed(1)}" y="${yLbl.toFixed(1)}" text-anchor="${anchor}" font-size="11" font-weight="700" fill="#475569" font-family="sans-serif">${axis.label}</text>`
+    })
+
+    const valPoints = scores.map((val, i) => {
+      const angle = -Math.PI / 2 + i * angleStep
+      const x = cx + r * val * Math.cos(angle)
+      const y = cy + r * val * Math.sin(angle)
+      return `${x.toFixed(1)},${y.toFixed(1)}`
+    }).join(' ')
+
+    const dots = scores.map((val, i) => {
+      const angle = -Math.PI / 2 + i * angleStep
+      const x = cx + r * val * Math.cos(angle)
+      const y = cy + r * val * Math.sin(angle)
+      return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4.5" fill="#4f46e5" stroke="#ffffff" stroke-width="2" />`
+    }).join('')
+
+    return `
+      <div style="border:1.5px solid #cbd5e1; border-radius:18px; padding:18px; background:#ffffff; max-width:380px; margin:20px auto; text-align:center; box-shadow:0 4px 16px rgba(0,0,0,0.04); font-family:sans-serif; page-break-inside:avoid;">
+        <div style="font-size:14px; font-weight:900; color:#0f172a; text-transform:uppercase; letter-spacing:0.8px;">MEZONLAR BO'YICHA</div>
+        <div style="font-size:12px; font-weight:600; color:#64748b; margin-top:2px; margin-bottom:12px;">Tahlil audio: sdelka • ${audioDurationStr}</div>
+        <svg width="300" height="300" viewBox="0 0 300 300" style="overflow:visible; display:block; margin:0 auto;">
+          ${gridRings}
+          ${axisLines}
+          <polygon points="${valPoints}" fill="rgba(79, 70, 229, 0.3)" stroke="#4f46e5" stroke-width="2.5" stroke-linejoin="round" />
+          ${dots}
+          ${labelTags}
+        </svg>
+      </div>
+    `
+  }
+
   return (
     <div className="bg-white min-h-screen font-sans text-gray-900 max-w-[960px] mx-auto p-8 print:p-0 print:max-w-none text-base leading-relaxed">
       {/* Header */}
@@ -216,6 +300,10 @@ export default function AuditPdfPage() {
             <div className="flex justify-between">
               <span className="text-gray-600 font-medium">Суҳбат улуши:</span>
               <span className="font-bold text-gray-900">Менежер {audit.managerTalkRatio}% / Мижоз {audit.customerTalkRatio}%</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600 font-medium">ОКК ходими:</span>
+              <span className="font-bold text-gray-900">{(audit as any).okkOfficer || '—'}</span>
             </div>
           </div>
         </div>
@@ -369,6 +457,102 @@ export default function AuditPdfPage() {
           </table>
         </div>
       </div>
+
+      {/* 📊 Analytics Section */}
+      <div className="my-8 p-6 border-2 border-gray-300 rounded-2xl bg-gray-50/70 break-inside-auto">
+        <div className="text-lg font-black text-gray-900 mb-4 border-b-2 border-gray-300 pb-2 flex justify-between items-center">
+          <span>📊 АНАЛИТИКА</span>
+          <span className="text-xs font-bold text-gray-600">
+            {Math.round((audit.finalScore / audit.maxPossibleScore) * 100)}% умумий натижа
+          </span>
+        </div>
+
+        {/* Criteria bars */}
+        <div className="space-y-2 mb-6">
+          <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">Мезонлар бўйича баҳо</p>
+          {audit.criterionResults
+            .filter((c) => c.status !== 'NOT_APPLICABLE')
+            .map((c, i) => {
+              const pct = c.maxScore > 0 ? Math.round((c.finalScore / c.maxScore) * 100) : 0
+              const colorCls = pct >= 80 ? 'bg-emerald-600' : pct >= 60 ? 'bg-amber-500' : 'bg-red-600'
+              const textCls = pct >= 80 ? 'text-emerald-700' : pct >= 60 ? 'text-amber-700' : 'text-red-700'
+              return (
+                <div key={c.id} className="flex items-center gap-2 text-xs">
+                  <span className="text-gray-400 w-4 text-right font-mono">{i + 1}.</span>
+                  <span className="font-semibold text-gray-800 flex-1 truncate">
+                    {(c.criterion?.nameUz || c.criterionCode).replace(/^\d+\.\s*/, '')}
+                  </span>
+                  <div className="w-32 h-2 rounded-full bg-gray-200 overflow-hidden shrink-0">
+                    <div className={cn('h-full rounded-full', colorCls)} style={{ width: `${pct}%` }} />
+                  </div>
+                  <span className={cn('w-9 text-right font-black tabular-nums', textCls)}>{pct}%</span>
+                </div>
+              )
+            })}
+        </div>
+
+        {/* Key indicators grid */}
+        <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-3">Асосий кўрсаткичлар</p>
+        <div className="grid grid-cols-6 gap-2 mb-4 text-center">
+          <div className="border border-gray-300 rounded-xl p-2.5 bg-white">
+            <div className="text-lg font-black text-blue-600">{Math.round((audit.finalScore / audit.maxPossibleScore) * 100)}%</div>
+            <div className="text-[10px] font-bold text-gray-500 uppercase mt-0.5">Умумий</div>
+          </div>
+          <div className="border border-gray-300 rounded-xl p-2.5 bg-white">
+            <div className={cn('text-lg font-black', audit.saleProbability >= 60 ? 'text-emerald-600' : 'text-red-600')}>
+              {audit.saleProbability}%
+            </div>
+            <div className="text-[10px] font-bold text-gray-500 uppercase mt-0.5">Сотиш</div>
+          </div>
+          <div className="border border-gray-300 rounded-xl p-2.5 bg-white">
+            <div className="text-lg font-black text-sky-600">{audit.managerTalkRatio}%</div>
+            <div className="text-[10px] font-bold text-gray-500 uppercase mt-0.5">Менежер</div>
+          </div>
+          <div className="border border-gray-300 rounded-xl p-2.5 bg-white">
+            <div className="text-lg font-black text-purple-600">{audit.customerTalkRatio}%</div>
+            <div className="text-[10px] font-bold text-gray-500 uppercase mt-0.5">Мижоз</div>
+          </div>
+          <div className="border border-gray-300 rounded-xl p-2.5 bg-white">
+            <div className="text-lg font-black text-amber-600">
+              {Math.max(0, 100 - ((audit as any).interruptionsCount || 0) * 10)}%
+            </div>
+            <div className="text-[10px] font-bold text-gray-500 uppercase mt-0.5">Узилиш</div>
+          </div>
+          <div className="border border-gray-300 rounded-xl p-2.5 bg-white">
+            <div className={cn('text-lg font-black', audit.hasCriticalFails ? 'text-red-600' : 'text-emerald-600')}>
+              {audit.hasCriticalFails ? '20%' : `${Math.round((audit.finalScore / audit.maxPossibleScore) * 100)}%`}
+            </div>
+            <div className="text-[10px] font-bold text-gray-500 uppercase mt-0.5">ОКК</div>
+          </div>
+        </div>
+
+        {/* Sale probability bar */}
+        <div>
+          <div className="flex justify-between items-center text-xs mb-1">
+            <span className="font-bold text-gray-600 uppercase">Сотиш эҳтимоли</span>
+            <span className="font-black text-gray-900 text-sm">{audit.saleProbability}%</span>
+          </div>
+          <div className="h-2.5 rounded-full bg-gray-200 overflow-hidden">
+            <div
+              className={cn(
+                'h-full rounded-full',
+                audit.saleProbability >= 70 ? 'bg-emerald-600' : audit.saleProbability >= 40 ? 'bg-amber-500' : 'bg-red-600'
+              )}
+              style={{ width: `${audit.saleProbability}%` }}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div
+        className="my-6 flex justify-center"
+        dangerouslySetInnerHTML={{
+          __html: generateRadarChartSVG(
+            audit.criterionResults,
+            formatDuration(audit.call.talkDurationSeconds)
+          )
+        }}
+      />
 
       {/* ── COPYRIGHT & INTELLECTUAL PROPERTY SECTION ── */}
       <div className="my-8 p-6 bg-gray-50 border-2 border-gray-300 rounded-2xl break-inside-avoid">

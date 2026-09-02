@@ -94,6 +94,7 @@ interface ManualAuditReport {
   saleProbability: number
   fillerWords: Array<{ word: string; count: number }>
   rudenessDetected: boolean
+  transcript?: string
   callType: string
   importantQuotes: Array<{ speaker: string; timestamp: string; text: string }>
   customerNeeds: string[]
@@ -433,13 +434,16 @@ export default function ManualAuditPage() {
   const [managerPosition, setManagerPosition] = useState('Sotuv menejeri')
   const [companyName, setCompanyName] = useState('')
   const [customerName, setCustomerName] = useState('')
-  const [okkOfficer, setOkkOfficer] = useState('') // OKK hodimi FIO
-  const [responsiblePerson, setResponsiblePerson] = useState('') // Mas'ul shaxs
+  const [okkOfficer, setOkkOfficer] = useState('') // Mas'ul Sifat nazorati hodimi
   const [loading, setLoading] = useState(false)
   const [progress, setProgress] = useState<'idle' | 'uploading' | 'transcribing' | 'analyzing' | 'done'>('idle')
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const [report, setReport] = useState<ManualAuditReport | null>(null)
   const [isEditMode, setIsEditMode] = useState(false)
+  const [showTranscript, setShowTranscript] = useState(false)
+  const [editingTranscript, setEditingTranscript] = useState('')
+  const [editingNextStep, setEditingNextStep] = useState('')
+  const [isEditingNextStepInline, setIsEditingNextStepInline] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const reportRef = useRef<HTMLDivElement>(null)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -536,6 +540,8 @@ export default function ManualAuditPage() {
       }
 
       setReport(data.data)
+      setEditingTranscript(data.data.transcript || '')
+      setEditingNextStep(data.data.nextStep || '')
       setProgress('done')
       toast.success('Tahlil muvaffaqiyatli yakunlandi! ✓')
 
@@ -561,7 +567,95 @@ export default function ManualAuditPage() {
     setManagerName('')
     setCustomerName('')
     setOkkOfficer('')
-    setResponsiblePerson('')
+    setShowTranscript(false)
+    setEditingTranscript('')
+    setEditingNextStep('')
+    setIsEditingNextStepInline(false)
+  }
+
+  // ── Radar Chart SVG Generator (Image 3 style) ──────────────────
+  const generateRadarChartSVG = (
+    criteria: Array<any>,
+    audioDurationStr: string = '5:19'
+  ) => {
+    const axes = [
+      { label: 'Саломлашиш', keywords: ['greeting_hello', 'greeting', 'саломлашиш', 'идентификация', '1.'] },
+      { label: 'Эҳтиёж', keywords: ['эҳтиёж', 'савол', 'need', '2.'] },
+      { label: 'Маҳсулот', keywords: ['маҳсулот', 'тақдимот', 'product', '3.'] },
+      { label: 'Эътироз', keywords: ['эътироз', 'нарх', 'objection', '4.'] },
+      { label: 'Босим', keywords: ['битим', 'якунлаш', 'қадам', 'close', '5.', '6.', 'босим'] },
+      { label: 'Кайфият', keywords: ['кайфият', 'мулоқот', 'эмпатия', 'mood', '7.'] },
+      { label: 'Фаоллик', keywords: ['фаоллик', 'диққат', 'узилиш', 'active', '8.', '9.'] }
+    ]
+
+    const scores = axes.map(axis => {
+      const matched = (criteria || []).filter(c => {
+        const name = String(c.nameUz || c.name || c.criterionCode || c.code || '').toLowerCase()
+        return axis.keywords.some(k => name.includes(k.toLowerCase()))
+      })
+      if (matched.length > 0) {
+        const sumScore = matched.reduce((acc, c) => acc + (c.score || 0), 0)
+        const sumMax = matched.reduce((acc, c) => acc + (c.maxScore || 10), 0)
+        return sumMax > 0 ? Math.min(1.0, Math.max(0.25, sumScore / sumMax)) : 0.75
+      }
+      return 0.75
+    })
+
+    const cx = 150, cy = 150, r = 85
+    const n = axes.length
+    const angleStep = (Math.PI * 2) / n
+
+    const gridRings = [0.2, 0.4, 0.6, 0.8, 1.0].map(level => {
+      const pts = axes.map((_, i) => {
+        const angle = -Math.PI / 2 + i * angleStep
+        const x = cx + r * level * Math.cos(angle)
+        const y = cy + r * level * Math.sin(angle)
+        return `${x.toFixed(1)},${y.toFixed(1)}`
+      }).join(' ')
+      return `<polygon points="${pts}" fill="none" stroke="#cbd5e1" stroke-width="1.2" stroke-dasharray="${level === 1 ? 'none' : '2,2'}" />`
+    }).join('')
+
+    let axisLines = ''
+    let labelTags = ''
+    axes.forEach((axis, i) => {
+      const angle = -Math.PI / 2 + i * angleStep
+      const xEnd = cx + r * Math.cos(angle)
+      const yEnd = cy + r * Math.sin(angle)
+      axisLines += `<line x1="${cx}" y1="${cy}" x2="${xEnd.toFixed(1)}" y2="${yEnd.toFixed(1)}" stroke="#cbd5e1" stroke-width="1.2" />`
+
+      const xLbl = cx + (r + 26) * Math.cos(angle)
+      const yLbl = cy + (r + 14) * Math.sin(angle)
+      const anchor = Math.abs(xLbl - cx) < 15 ? 'middle' : xLbl > cx ? 'start' : 'end'
+      labelTags += `<text x="${xLbl.toFixed(1)}" y="${yLbl.toFixed(1)}" text-anchor="${anchor}" font-size="11" font-weight="700" fill="#475569" font-family="sans-serif">${axis.label}</text>`
+    })
+
+    const valPoints = scores.map((val, i) => {
+      const angle = -Math.PI / 2 + i * angleStep
+      const x = cx + r * val * Math.cos(angle)
+      const y = cy + r * val * Math.sin(angle)
+      return `${x.toFixed(1)},${y.toFixed(1)}`
+    }).join(' ')
+
+    const dots = scores.map((val, i) => {
+      const angle = -Math.PI / 2 + i * angleStep
+      const x = cx + r * val * Math.cos(angle)
+      const y = cy + r * val * Math.sin(angle)
+      return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4.5" fill="#4f46e5" stroke="#ffffff" stroke-width="2" />`
+    }).join('')
+
+    return `
+      <div style="border:1.5px solid #cbd5e1; border-radius:18px; padding:18px; background:#ffffff; max-width:380px; margin:20px auto; text-align:center; box-shadow:0 4px 16px rgba(0,0,0,0.04); font-family:sans-serif; page-break-inside:avoid;">
+        <div style="font-size:14px; font-weight:900; color:#0f172a; text-transform:uppercase; letter-spacing:0.8px;">MEZONLAR BO'YICHA</div>
+        <div style="font-size:12px; font-weight:600; color:#64748b; margin-top:2px; margin-bottom:12px;">Tahlil audio: sdelka • ${audioDurationStr}</div>
+        <svg width="300" height="300" viewBox="0 0 300 300" style="overflow:visible; display:block; margin:0 auto;">
+          ${gridRings}
+          ${axisLines}
+          <polygon points="${valPoints}" fill="rgba(79, 70, 229, 0.3)" stroke="#4f46e5" stroke-width="2.5" stroke-linejoin="round" />
+          ${dots}
+          ${labelTags}
+        </svg>
+      </div>
+    `
   }
 
   // ── Professional PDF generator (kotib.ai style) ──────────────────
@@ -727,6 +821,18 @@ export default function ManualAuditPage() {
   .biz-label { background:#f1f5f9; font-size:13px; font-weight:800; text-transform:uppercase; letter-spacing:1px; padding:7px 14px; color:#334155; border-bottom:1px solid #cbd5e1; }
   .biz-item p { font-size:15px; color:#1e293b; padding:10px 14px; line-height:1.6; font-weight:500; }
 
+  /* ── Analytics Box ── */
+  .analytics-box { border:1.5px solid #cbd5e1; border-radius:12px; padding:18px; margin-top:24px; margin-bottom:24px; background:#f8fafc; page-break-inside:auto; break-inside:auto; }
+  .analytics-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:10px; margin:14px 0; text-align:center; }
+  .analytics-card { border:1px solid #cbd5e1; border-radius:10px; padding:10px 4px; background:#fff; }
+  .analytics-card .val { font-size:18px; font-weight:900; color:#0f172a; }
+  .analytics-card .lbl { font-size:10px; font-weight:800; color:#64748b; text-transform:uppercase; margin-top:2px; }
+  .bar-row { display:flex; align-items:center; gap:8px; margin-bottom:6px; font-size:13px; }
+  .bar-name { flex:1; font-weight:600; color:#334155; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .bar-bg { width:120px; height:8px; background:#e2e8f0; border-radius:4px; overflow:hidden; }
+  .bar-fill { height:100%; border-radius:4px; }
+  .bar-pct { width:36px; text-align:right; font-weight:800; font-size:12px; }
+
   /* ── Copyright Section ── */
   .copyright-section { margin-top:36px; padding:22px 24px; background:#f8fafc; border:1.5px solid #cbd5e1; border-radius:14px; page-break-inside:avoid; }
   .copyright-title { font-size:17px; font-weight:900; color:#0f172a; margin-bottom:8px; border-bottom:2px solid #cbd5e1; padding-bottom:6px; }
@@ -784,8 +890,7 @@ export default function ManualAuditPage() {
       <td class="label">Лавозими</td><td class="value">${report.managerPosition}</td></tr>
   <tr><td class="label">Мижоз</td><td class="value">${report.customerName || 'Номаълум'}</td>
       <td class="label">Аудио файл</td><td class="value">${report.audioFileName}</td></tr>
-  <tr><td class="label">ОКК ходими</td><td class="value">${okkOfficer || '—'}</td>
-      <td class="label">Масъул шахс</td><td class="value">${responsiblePerson || '—'}</td></tr>
+  <tr><td class="label">ОКК ходими</td><td class="value" colspan="3">${okkOfficer || '—'}</td></tr>
   <tr><td class="label">Қўнғироқ натижаси</td><td class="value">${report.callResult || '—'}</td>
       <td class="label">Давомийлиги</td><td class="value">${report.audioDurationSeconds > 0 ? `${Math.floor(report.audioDurationSeconds/60)}:${String(Math.floor(report.audioDurationSeconds%60)).padStart(2,'0')}` : '—'}</td></tr>
 </table>
@@ -830,6 +935,52 @@ ${report.nextStep ? `
 ${businessHtml ? `
 <div class="section-title" style="margin-top:24px">📊 БИЗНЕС ТАҲЛИЛ ВА ТУШУНЧАЛАР</div>
 ${businessHtml}` : ''}
+
+<div class="analytics-box">
+  <div class="section-title" style="border-bottom:none;padding:0;margin-bottom:14px">📊 АНАЛИТИКА <span style="font-size:13px;font-weight:700;color:#64748b">${scorePct}% умумий натижа</span></div>
+
+  <div style="margin-bottom:16px">
+    <div style="font-size:12px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Мезонлар бўйича баҳо</div>
+    ${(report.criteria || []).filter(c => c && c.status !== 'NOT_APPLICABLE').map((c, i) => {
+      const cMax = (typeof c.maxScore === 'number' && c.maxScore > 0) ? c.maxScore : 10
+      const cScore = typeof c.score === 'number' ? c.score : 0
+      const pct = Math.round((cScore / cMax) * 100)
+      const color = pct >= 80 ? '#16a34a' : pct >= 60 ? '#ca8a04' : '#dc2626'
+      const rawName = c.nameUz || (c as any).name || (c as any).criterionCode || (c as any).code || `Mezon ${i+1}`
+      const name = String(rawName).replace(/^\d+\.\s*/, '')
+      return `
+        <div class="bar-row">
+          <span style="color:#94a3b8;width:16px">${i + 1}.</span>
+          <span class="bar-name">${name}</span>
+          <div class="bar-bg"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div>
+          <span class="bar-pct" style="color:${color}">${pct}%</span>
+        </div>
+      `
+    }).join('')}
+  </div>
+
+  <div style="font-size:12px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:1px">Асосий кўрсаткичлар</div>
+  <div class="analytics-grid">
+    <div class="analytics-card"><div class="val" style="color:#2563eb">${scorePct}%</div><div class="lbl">Умумий</div></div>
+    <div class="analytics-card"><div class="val" style="color:${(report.saleProbability || 0) >= 60 ? '#16a34a' : '#dc2626'}">${report.saleProbability || 0}%</div><div class="lbl">Сотиш</div></div>
+    <div class="analytics-card"><div class="val" style="color:#0284c7">${report.managerTalkRatio || 50}%</div><div class="lbl">Менежер</div></div>
+    <div class="analytics-card"><div class="val" style="color:#9333ea">${report.customerTalkRatio || Math.max(0, 100 - (report.managerTalkRatio || 50))}%</div><div class="lbl">Мижоз</div></div>
+    <div class="analytics-card"><div class="val" style="color:${(report.interruptions || 0) <= 2 ? '#16a34a' : '#ca8a04'}">${Math.max(0, 100 - (report.interruptions || 0) * 10)}%</div><div class="lbl">Узилиш</div></div>
+    <div class="analytics-card"><div class="val" style="color:${report.hasCriticalFails ? '#dc2626' : '#16a34a'}">${report.hasCriticalFails ? 20 : scorePct}%</div><div class="lbl">ОКК</div></div>
+  </div>
+
+  <div style="margin-top:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+      <span style="font-size:12px;font-weight:800;color:#64748b;text-transform:uppercase">Сотиш эҳтимоли</span>
+      <span style="font-size:18px;font-weight:900;color:${scoreColor}">${report.saleProbability || 0}%</span>
+    </div>
+    <div style="height:10px;background:#e2e8f0;border-radius:5px;overflow:hidden">
+      <div style="height:100%;width:${report.saleProbability || 0}%;background:${scoreColor};border-radius:5px"></div>
+    </div>
+  </div>
+</div>
+
+${generateRadarChartSVG(report.criteria, report.audioDurationSeconds > 0 ? `${Math.floor(report.audioDurationSeconds/60)}:${String(Math.floor(report.audioDurationSeconds%60)).padStart(2,'0')}` : '5:19')}
 
 <!-- ── COPYRIGHT & INTELLECTUAL PROPERTY SECTION ── -->
 <div class="copyright-section">
@@ -1075,34 +1226,16 @@ ${businessHtml}` : ''}
             </div>
 
             <div className="pt-2 border-t border-border/40 space-y-3">
-              <p className="text-[11px] font-bold text-primary uppercase tracking-wider">
-                Сифат назорати ва Масъулият (PDF учун)
-              </p>
-
               <div>
                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
                   <User size={11} className="text-blue-400" />
-                  ОКК Ходими Ф.И.О. (Жавобгар)
+                  ОКК ходими
                 </label>
                 <input
                   type="text"
                   value={okkOfficer}
                   onChange={e => setOkkOfficer(e.target.value)}
-                  placeholder="Масалан: Шаҳноза Алиева (ОКК)"
-                  className="w-full px-3 py-2.5 rounded-xl bg-muted/30 border border-border/50 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary/40 transition-all"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                  <User size={11} className="text-purple-400" />
-                  Масъул Шахс / Раҳбар Ф.И.О.
-                </label>
-                <input
-                  type="text"
-                  value={responsiblePerson}
-                  onChange={e => setResponsiblePerson(e.target.value)}
-                  placeholder="Масалан: Жамшид Саидов (РОП)"
+                  placeholder="Масалан: Ясмина"
                   className="w-full px-3 py-2.5 rounded-xl bg-muted/30 border border-border/50 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary/40 transition-all"
                 />
               </div>
@@ -1220,8 +1353,7 @@ ${businessHtml}` : ''}
                     { label: 'Lavomi', value: report.managerPosition },
                     { label: 'Xodim', value: report.managerName },
                     ...(report.customerName ? [{ label: 'Mijoz', value: report.customerName }] : []),
-                    ...(okkOfficer ? [{ label: 'OKK hodimi', value: okkOfficer }] : []),
-                    ...(responsiblePerson ? [{ label: 'Mas\'ul shaxs', value: responsiblePerson }] : []),
+                    ...(okkOfficer ? [{ label: 'ОКК масъул ходим', value: okkOfficer }] : []),
                   ].map(({ label, value }) => (
                     <div key={label} className="flex items-baseline gap-2">
                       <span className="text-xs text-muted-foreground w-28 flex-shrink-0">{label}:</span>
@@ -1465,22 +1597,68 @@ ${businessHtml}` : ''}
           )}
 
           {/* Next Step */}
-          {(report.nextStep || isEditMode) && (
+          {(report.nextStep || isEditMode || true) && (
             <div className="rounded-2xl border border-primary/30 bg-primary/5 p-5">
-              <h3 className="text-xs font-bold text-primary uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                <Zap size={13} />
-                Кейинги қадам
-              </h3>
-              {isEditMode ? (
-                <textarea
-                  rows={2}
-                  value={report.nextStep || ''}
-                  onChange={e => setReport({ ...report, nextStep: e.target.value })}
-                  placeholder="Кейинги қадам..."
-                  className="w-full px-3 py-2 rounded-xl bg-muted/40 border border-primary/30 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40 resize-none"
-                />
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-1.5">
+                  <Zap size={13} />
+                  Кейинги қадам
+                  <span className="text-[10px] font-normal text-muted-foreground ml-1">
+                    (Таҳрирланиши мумкин)
+                  </span>
+                </h3>
+                <button
+                  onClick={() => {
+                    if (isEditingNextStepInline) {
+                      setReport({ ...report, nextStep: editingNextStep })
+                      setIsEditingNextStepInline(false)
+                      toast.success('Кейинги қадам сақланди ✓')
+                    } else {
+                      setEditingNextStep(report.nextStep || '')
+                      setIsEditingNextStepInline(true)
+                    }
+                  }}
+                  className="flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline"
+                >
+                  {isEditingNextStepInline ? (
+                    <><Save size={12} /> Сақлаш</>
+                  ) : (
+                    <><Pencil size={12} /> Таҳрирлаш</>
+                  )}
+                </button>
+              </div>
+
+              {isEditMode || isEditingNextStepInline ? (
+                <div className="space-y-2">
+                  <textarea
+                    rows={2}
+                    value={editingNextStep}
+                    onChange={e => {
+                      setEditingNextStep(e.target.value)
+                      setReport({ ...report, nextStep: e.target.value })
+                    }}
+                    placeholder="Кейинги қадамни киритинг (масалан: Сешанба куни соат 15:00 да қайта боғланиш)..."
+                    className="w-full px-3 py-2 rounded-xl bg-muted/40 border border-primary/30 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40 resize-none font-medium"
+                  />
+                  {isEditingNextStepInline && (
+                    <div className="flex justify-end">
+                      <button
+                        onClick={() => {
+                          setReport({ ...report, nextStep: editingNextStep })
+                          setIsEditingNextStepInline(false)
+                          toast.success('Кейинги қадам сақланди ✓')
+                        }}
+                        className="flex items-center gap-1 px-3 py-1 text-xs font-bold rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
+                      >
+                        <Save size={12} /> Сақлаш
+                      </button>
+                    </div>
+                  )}
+                </div>
               ) : (
-                <p className="text-sm text-foreground leading-relaxed">{report.nextStep}</p>
+                <p className="text-sm text-foreground leading-relaxed font-semibold">
+                  {report.nextStep || 'Кейинги қадам келишилмади'}
+                </p>
               )}
             </div>
           )}
@@ -1553,6 +1731,171 @@ ${businessHtml}` : ''}
               )}
             </div>
           )}
+
+          {/* ─── STT Transcript Edit ─────────────────────────────────── */}
+          {(editingTranscript || report.transcript) && (
+            <div className="rounded-2xl border border-border/40 bg-card/60 overflow-hidden">
+              <button
+                onClick={() => setShowTranscript(s => !s)}
+                className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-muted/20 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <MessageSquare size={15} className="text-blue-400" />
+                  <span className="text-sm font-bold text-foreground">STT Транскрипция</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/25 font-bold">
+                    Таҳрирлаш мумкин
+                  </span>
+                </div>
+                <ChevronDown
+                  size={14}
+                  className={cn('text-muted-foreground transition-transform duration-200', showTranscript && 'rotate-180')}
+                />
+              </button>
+
+              {showTranscript && (
+                <div className="px-5 pb-5 border-t border-border/30 pt-4 space-y-3">
+                  <p className="text-xs text-muted-foreground">
+                    Aisha AI STT томонидан яратилган транскрипция. Хатоларни тузатишингиз мумкин.
+                  </p>
+                  <textarea
+                    rows={12}
+                    value={editingTranscript}
+                    onChange={e => setEditingTranscript(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl bg-muted/30 border border-blue-500/30 text-xs text-foreground font-mono leading-relaxed focus:outline-none focus:ring-1 focus:ring-blue-500/50 resize-y"
+                    placeholder="Транскрипция юкланмади..."
+                  />
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] text-muted-foreground">
+                      {editingTranscript.length} белги · {editingTranscript.split('\n').length} қатор
+                    </p>
+                    <button
+                      onClick={() => {
+                        setReport({ ...report, transcript: editingTranscript })
+                        toast.success('Транскрипция сақланди ✓')
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 border border-blue-500/30 transition-all"
+                    >
+                      <Save size={12} /> Сақлаш
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ─── Analytics ─────────────────────────────────── */}
+          <div className="rounded-2xl border border-primary/20 bg-gradient-to-b from-card/80 to-card/40 overflow-hidden">
+            {/* Header */}
+            <div className="px-5 py-4 border-b border-border/30 flex items-center gap-2 bg-primary/5">
+              <BarChart3 size={16} className="text-primary" />
+              <h3 className="text-sm font-black text-foreground tracking-wide">АНАЛИТИКА</h3>
+              <span className="ml-auto text-xs font-bold text-primary">
+                {Math.round((report.totalScore / report.maxScore) * 100)}% умумий натижа
+              </span>
+            </div>
+
+            {/* Criteria bars */}
+            <div className="px-5 py-4 space-y-2.5">
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em] mb-3">Мезонлар бўйича баҳо</p>
+              {report.criteria.filter(c => c.status !== 'NOT_APPLICABLE').map((c, i) => {
+                const pct = c.maxScore > 0 ? Math.round((c.score / c.maxScore) * 100) : 0
+                const barColor = pct >= 80 ? 'bg-gradient-to-r from-emerald-600 to-emerald-400' : pct >= 60 ? 'bg-gradient-to-r from-yellow-600 to-yellow-400' : 'bg-gradient-to-r from-red-600 to-red-500'
+                const textColor = pct >= 80 ? 'text-emerald-400' : pct >= 60 ? 'text-yellow-400' : 'text-red-400'
+                return (
+                  <div key={c.code} className="flex items-center gap-2">
+                    <span className="text-[10px] text-muted-foreground/60 w-3 text-right flex-shrink-0">{i + 1}</span>
+                    <span className="text-xs text-foreground font-medium flex-1 min-w-0 truncate">{c.nameUz.replace(/^\d+\.\s*/, '')}</span>
+                    <div className="w-28 h-2 rounded-full bg-muted/40 overflow-hidden flex-shrink-0">
+                      <div
+                        className={cn('h-full rounded-full transition-all duration-700', barColor)}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <span className={cn('text-xs font-black w-8 text-right flex-shrink-0 tabular-nums', textColor)}>{pct}%</span>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Key metrics row — like FIFA card bottom stats */}
+            <div className="border-t border-border/20 px-5 py-4 bg-muted/10">
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em] mb-4">Асосий кўрсаткичлар</p>
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+                {[
+                  { label: 'Умумий', value: Math.round((report.totalScore / report.maxScore) * 100), color: 'text-primary' },
+                  { label: 'Сотиш', value: report.saleProbability, color: report.saleProbability >= 60 ? 'text-emerald-400' : 'text-red-400' },
+                  { label: 'Менежер', value: report.managerTalkRatio, color: 'text-blue-400' },
+                  { label: 'Мижоз', value: report.customerTalkRatio || Math.max(0, 100 - report.managerTalkRatio), color: 'text-purple-400' },
+                  { label: 'Узилиш', value: Math.max(0, 100 - report.interruptions * 10), color: report.interruptions <= 2 ? 'text-emerald-400' : 'text-yellow-400' },
+                  { label: 'OKK', value: report.hasCriticalFails ? 20 : Math.round((report.totalScore / report.maxScore) * 100), color: report.hasCriticalFails ? 'text-red-400' : 'text-emerald-400' },
+                ].map(({ label, value, color }) => (
+                  <div key={label} className="flex flex-col items-center gap-1.5">
+                    <div className="relative w-14 h-14 flex items-center justify-center">
+                      <svg className="absolute inset-0 -rotate-90" viewBox="0 0 56 56" fill="none">
+                        <circle cx="28" cy="28" r="22" stroke="rgba(255,255,255,0.06)" strokeWidth="4" />
+                        <circle
+                          cx="28" cy="28" r="22"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                          strokeLinecap="round"
+                          strokeDasharray={`${2 * Math.PI * 22}`}
+                          strokeDashoffset={`${2 * Math.PI * 22 * (1 - Math.min(100, value) / 100)}`}
+                          className={color}
+                        />
+                      </svg>
+                      <span className={cn('text-sm font-black tabular-nums', color)}>{value}</span>
+                    </div>
+                    <span className="text-[9px] text-muted-foreground text-center font-bold uppercase tracking-wider">{label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Sale probability bar */}
+            <div className="border-t border-border/20 px-5 py-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                  <TrendingUp size={12} />
+                  Сотиш эҳтимоли
+                </span>
+                <span className={cn(
+                  'text-2xl font-black tabular-nums',
+                  report.saleProbability >= 70 ? 'text-emerald-400' :
+                  report.saleProbability >= 40 ? 'text-yellow-400' : 'text-red-400'
+                )}>{report.saleProbability}%</span>
+              </div>
+              <div className="h-3 rounded-full bg-muted/40 overflow-hidden">
+                <div
+                  className={cn(
+                    'h-full rounded-full transition-all duration-1000',
+                    report.saleProbability >= 70 ? 'bg-gradient-to-r from-emerald-600 to-emerald-400' :
+                    report.saleProbability >= 40 ? 'bg-gradient-to-r from-yellow-600 to-yellow-400' :
+                    'bg-gradient-to-r from-red-700 to-red-400'
+                  )}
+                  style={{ width: `${report.saleProbability}%` }}
+                />
+              </div>
+              <div className="flex justify-between text-[9px] text-muted-foreground/50 mt-1.5 font-mono">
+                <span>0%</span>
+                <span>25%</span>
+                <span>50%</span>
+                <span>75%</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Radar Chart SVG — Image 3 style */}
+          <div
+            className="mt-6 flex justify-center overflow-x-auto"
+            dangerouslySetInnerHTML={{
+              __html: generateRadarChartSVG(
+                report.criteria,
+                report.audioDurationSeconds > 0
+                  ? `${Math.floor(report.audioDurationSeconds / 60)}:${String(Math.floor(report.audioDurationSeconds % 60)).padStart(2, '0')}`
+                  : '5:19'
+              )
+            }}
+          />
 
           {/* Print / Reset Footer */}
           <div className="flex items-center justify-center gap-3 pt-2 print:hidden">

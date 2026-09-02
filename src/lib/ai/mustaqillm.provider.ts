@@ -177,26 +177,9 @@ OKK БАҲОЛАШ ҚОИДАЛАРИ (ҚАТЪИЙ)
 
 2. КОНТЕКСТ-АВЕЙРлик (ЭНГ МУҲИМ ҚОИДА):
    — Мезонни қўнғироқ контекстисиз кўр кўрга баҳолама!
-   — Агар мезон бу қўнғироқ туriga ТЕГИШЛИ БЎЛМАСА — NOT_APPLICABLE қайтар.
-   — Мижоз ўзи биринчи сафар қўнғироқ қилаётган бўлса — FOLLOW_UP мезони NOT_APPLICABLE.
-   — Эітироз BO'LMASA — "Эітирозлар билан ишлаш" мезони NOT_APPLICABLE.
-   — INBOUND қўнғироқда "Гаплашишга қулайми?" FAIL ЭМАС — NOT_APPLICABLE.
-   — COMPLAINT қўнғироқда FAB тақдимоти мажбурий эмас — NOT_APPLICABLE.
-   — WRONG_NUMBER қўнғироқда барча сотув мезонлари NOT_APPLICABLE.
+   — Агар мез� 6. КЕЙИНГИ ҚАДАМ (next_step): ҲЕЧ ҚАЧОН "Эртага 11:00 да қайта қўнғироқ" каби бир хил стандарт шаблон ёки такрорланувчи матн ишлатманг! Суҳбат транскриптини РЕАЛ ўрганиб чиқиб, менежер ва мижоз айнан нимага келишиб олганини (масалан: "Сешанба куни соат 15:00 да қайта боғланиш", "Тижорий таклиф кўриб чиқилгач 5-сентябрда қўнғироқ қилиш", "Мижоз ўйлаб кўриб ўзи алоқага чиқади") аниқ кўрсатиб ёзинг. Агар суҳбатда кейинги қадам умуман келишилмаган бўлса — "Кейинги қадам келишилмади" деб ёзинг.
 
-3. CRITERION STATUS ҚОИДАЛАРИ:
-   — PASS: мезон тўлиқ бажарилди → score = max_score, passed = true
-   — PARTIAL: қисман бажарилди → 0 дан max_score гача, passed = false
-   — FAIL: умуман бажарилмади → score = 0, passed = false
-   — NOT_APPLICABLE: бу қўнғироқ туriga тегишли эмас → score = 0, passed = false
-
-4. CRITICAL FAIL:
-   Агар мезон КРИТИК ВА status = FAIL → criticalFail = true, has_critical_fails = true
-
-5. TOTAL SCORE:
-   total_score = NOT_APPLICABLE БЎЛМАГАН мезонларнинг score йиғиндиси
-
-6. Фақат JSON қайтаринг — ҳеч қандай қўшимча матн бўлмасин.
+ 7. Фақат JSON қайтаринг — ҳеч қандай қўшимча матн бўлмасин.
 
 Чек-лист мезонлари:
 ${criteriaList}
@@ -240,7 +223,47 @@ JSON структураси:
   "recommendation": "менежерга тавсия",
   "rop_recommendation": "РОП учун тавсия",
   "call_result": "Follow-up",
-  "next_step": "Эртага 11:00 да қайта қўнғироқ",
+  "next_step": "суҳбатдаги аниқ ва РЕАЛ келишилган кейинги қадам ва вақти (масалан: 'Сешанба куни соат 14:00 да қайта қўнғироқ')",ptSection}
+
+JSON структураси:
+{
+  "call_type": "new_lead|repeat_call|sale|service|complaint|wrong_number",
+  "language": "uz_cyrillic|ru|mixed_uz_ru",
+  "summary": "қисқача хулоса",
+  "customer_need": ["эҳтиёж 1"],
+  "objections": [{"category": "price|time|trust|other", "quote": "...", "timestamp": "00:00", "handled": false}],
+  "manager_talk_ratio": 60,
+  "customer_talk_ratio": 40,
+  "interruptions": 0,
+  "long_pauses": 0,
+  "filler_words": [{"word": "демак", "count": 3}],
+  "rudeness_detected": false,
+  "false_promises_detected": false,
+  "script_compliance": 75,
+  "sale_probability": 65,
+  "strengths": ["кучли томон"],
+  "mistakes": ["хато"],
+  "important_quotes": [{"speaker": "MANAGER", "timestamp": "01:23", "text": "..."}],
+  "criteria": [{
+    "criterion_code": "greeting_hello",
+    "score": 4,
+    "max_score": 5,
+    "passed": true,
+    "status": "PARTIAL",
+    "explanation": "Умумий тушунтириш",
+    "strengths": ["Кучли томон"],
+    "errors": ["Хато"],
+    "recommendations": ["Тавсия"],
+    "evidence": [{"quote": "Ассалому алайкум...", "start": 2.5, "end": 5.0}],
+    "evidence_timestamp": "00:02",
+    "evidence_quote": "Ассалому алайкум",
+    "criticalFail": false
+  }],
+  "total_score": 55,
+  "recommendation": "менежерга тавсия",
+  "rop_recommendation": "РОП учун тавсия",
+  "call_result": "Follow-up",
+  "next_step": "суҳбатдаги аниқ ва РЕАЛ келишилган кейинги қадам ва вақти (масалан: 'Сешанба куни соат 14:00 да қайта қўнғироқ')",
   "has_critical_fails": false,
   "business_analysis": {
     "callContext": "Янги мижоз",

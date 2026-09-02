@@ -8,8 +8,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth, authErrorResponse, AuthError } from '@/lib/auth/server'
 import { AishaProvider } from '@/lib/ai/aisha.provider'
 
-// ── CRITICAL: allow up to 5 minutes for Aisha async polling ───────
-export const maxDuration = 300
+// ── CRITICAL: allow up to 10 minutes for Aisha async polling on long calls ──
+export const maxDuration = 600
 export const dynamic = 'force-dynamic'
 
 // OKK Criteria — 8 Official Call Center Standards (Marketing Markazi)
@@ -68,7 +68,7 @@ const OKK_CRITERIA = [
     maxScore: 10,
     isCritical: false,
     description:
-      'Аниқ кейинги ҳаракатни (учрашув, қайта қўнғироқ, таклиф, ҳужжат) ва аниқ муддат ҳамда вақтни келишиб олиш.',
+      'Аниқ кейинги ҳаракатни (учрашув, қайта қўнғироқ, таклиф, ҳужжат) ва аниқ кун, сана ҳамда вақтни (масалан: Эртага 11:00 да қайта қўнғироқ қилиш) келишиб олиш.',
   },
   {
     code: 'call_closing',

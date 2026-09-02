@@ -78,7 +78,7 @@ export class AishaProvider implements AIProvider {
 
     // Poll GET /api/v2/stt/get/{id}/ until status is SUCCESS
     let pollJson: any = null
-    const maxRetries = 60 // Up to 3 minutes
+    const maxRetries = 120 // Up to 6 minutes for long calls
     for (let i = 0; i < maxRetries; i++) {
       await new Promise((resolve) => setTimeout(resolve, 3000))
       try {
@@ -185,7 +185,13 @@ export class AishaProvider implements AIProvider {
     segments: Array<{ index: number; start: number; end: number; speaker: string; text: string }>
   ): Promise<Array<{ speaker: 'MANAGER' | 'CUSTOMER' | 'UNKNOWN'; startSeconds: number; endSeconds: number; text: string }>> {
     try {
-      const systemPrompt = `Сиз сотув бўлими қўнғироқлари учун лингвистик ва диаризация бўйича экспертсиз.
+      // For long calls with many segments, chunk the refinement to avoid token limits
+      const CHUNK_SIZE = 60
+      const allRefined: Array<{ index: number; speaker: string; text: string }> = []
+
+      for (let i = 0; i < segments.length; i += CHUNK_SIZE) {
+        const chunk = segments.slice(i, i + CHUNK_SIZE)
+        const systemPrompt = `Сиз сотув бўлими қўнғироқлари учун лингвистик ва диаризация бўйича экспертсиз.
 Берилган транскрипция Aisha AI томонидан таниб олинган ўзбек тилидаги матн ва SPEAKER_00, SPEAKER_01 овоз белгиларидир.
 
 ВАЗИФАНГИЗ:
@@ -198,26 +204,29 @@ export class AishaProvider implements AIProvider {
     { "index": number, "speaker": "MANAGER" | "CUSTOMER", "text": "Кириллчадаги тоза матн" }
   ]
 }
-Сегментлар сони аниқ ${segments.length} та бўлиши ШАРТ. Бошқа ҳеч қандай матн ёзманг.`
+Сегментлар сони аниқ ${chunk.length} та бўлиши ШАРТ. Бошқа ҳеч қандай матн ёзманг.`
 
-      const response = await this.openaiClient.chat.completions.create({
-        model: process.env.OPENAI_AUDIT_MODEL || 'gpt-4o',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: JSON.stringify({ segments }) },
-        ],
-        response_format: { type: 'json_object' },
-        temperature: 0.1,
-      })
+        const response = await this.openaiClient.chat.completions.create({
+          model: process.env.OPENAI_AUDIT_MODEL || 'gpt-4o',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: JSON.stringify({ segments: chunk }) },
+          ],
+          response_format: { type: 'json_object' },
+          temperature: 0.1,
+          max_tokens: 3000,
+        })
 
-      const parsed = JSON.parse(response.choices[0]?.message?.content || '{}')
-      const refinedList = parsed.segments || []
+        const parsed = JSON.parse(response.choices[0]?.message?.content || '{}')
+        const refinedChunk: Array<{ index: number; speaker: string; text: string }> = parsed.segments || []
+        allRefined.push(...refinedChunk)
+      }
 
       const result: Array<{ speaker: 'MANAGER' | 'CUSTOMER' | 'UNKNOWN'; startSeconds: number; endSeconds: number; text: string }> = []
       for (const orig of segments) {
-        const refinedSeg = refinedList.find((r: any) => r.index === orig.index)
+        const refinedSeg = allRefined.find((r: any) => r.index === orig.index)
         result.push({
-          speaker: refinedSeg?.speaker === 'MANAGER' || refinedSeg?.speaker === 'CUSTOMER' ? refinedSeg.speaker : 'UNKNOWN',
+          speaker: refinedSeg?.speaker === 'MANAGER' || refinedSeg?.speaker === 'CUSTOMER' ? refinedSeg.speaker as ('MANAGER' | 'CUSTOMER') : 'UNKNOWN',
           startSeconds: orig.start,
           endSeconds: orig.end,
           text: refinedSeg?.text || orig.text,
@@ -227,7 +236,7 @@ export class AishaProvider implements AIProvider {
     } catch (err: any) {
       console.warn(`[AishaProvider] refineAndMapSpeakers failed: ${err.message}. Returning raw segments...`)
       return segments.map((s) => ({
-        speaker: s.speaker === 'SPEAKER_01' ? 'MANAGER' : 'CUSTOMER',
+        speaker: s.speaker === 'SPEAKER_01' ? 'MANAGER' : ('CUSTOMER' as 'MANAGER' | 'CUSTOMER'),
         startSeconds: s.start,
         endSeconds: s.end,
         text: s.text,
