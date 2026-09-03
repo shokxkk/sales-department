@@ -457,6 +457,8 @@ export default function ManualAuditPage() {
   const [editingTranscript, setEditingTranscript] = useState('')
   const [editingNextStep, setEditingNextStep] = useState('')
   const [isEditingNextStepInline, setIsEditingNextStepInline] = useState(false)
+  const [isEditingScriptInline, setIsEditingScriptInline] = useState(false)
+  const [isEditingRopInline, setIsEditingRopInline] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const reportRef = useRef<HTMLDivElement>(null)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -820,7 +822,7 @@ export default function ManualAuditPage() {
 
   /* ── Summary sections ── */
   .two-col { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-bottom:24px; }
-  .summary-block { border-radius:12px; padding:18px; }
+  .summary-block { border-radius:12px; padding:18px; page-break-inside:avoid; break-inside:avoid; }
   .summary-block.green { background:#f0fdf4; border:1.5px solid #86efac; }
   .summary-block.red { background:#fff5f5; border:1.5px solid #fca5a5; }
   .summary-block.blue { background:#eff6ff; border:1.5px solid #93c5fd; }
@@ -946,7 +948,7 @@ ${report.nextStep ? `
 </div>` : ''}
 
 ${report.idealScriptSuggestions?.length ? `
-<div class="summary-block green" style="margin-bottom:16px;border-color:#16a34a">
+<div class="summary-block green" style="margin-bottom:16px;border-color:#16a34a;page-break-inside:avoid;break-inside:avoid;">
   <h4 style="color:#16a34a">✨ Сўзлашув варианти</h4>
   ${report.idealScriptSuggestions.map(s => `
     <div style="margin-top:8px;padding:8px 12px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0">
@@ -958,7 +960,7 @@ ${report.idealScriptSuggestions?.length ? `
 </div>` : ''}
 
 ${report.ropTrainingPlan ? `
-<div class="summary-block purple" style="margin-bottom:16px;border-color:#7c3aed">
+<div class="summary-block purple" style="margin-bottom:16px;border-color:#7c3aed;page-break-inside:avoid;break-inside:avoid;">
   <h4 style="color:#7c3aed">🎓 Менежерга тавсия</h4>
   <p style="margin-bottom:4px"><b>Паст кўникма:</b> ${report.ropTrainingPlan.weak_skill}</p>
   <p style="margin-bottom:4px"><b>Рекомендуемый тренинг:</b> ${report.ropTrainingPlan.recommended_training}</p>
@@ -1704,23 +1706,70 @@ ${generateRadarChartSVG(report.criteria, report.audioDurationSeconds > 0 ? `${Ma
                   <Sparkles size={16} className="text-emerald-400" />
                   <h3 className="text-sm font-bold text-foreground">Сўзлашув варианти</h3>
                 </div>
-                <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                  +90% сотув эҳтимоли
-                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setIsEditingScriptInline(!isEditingScriptInline)}
+                    className="flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-lg bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/25 transition-all"
+                  >
+                    <Pencil size={11} /> {isEditingScriptInline || isEditMode ? 'Сақлаш' : 'Таҳрирлаш'}
+                  </button>
+                  <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                    +90% сотув эҳтимоли
+                  </span>
+                </div>
               </div>
               {report.idealScriptSuggestions.map((s, idx) => (
                 <div key={idx} className="p-3.5 rounded-xl bg-emerald-500/5 border border-emerald-500/20 space-y-2">
                   <div className="flex items-start gap-2 text-xs">
                     <span className="font-bold text-red-400 shrink-0">Мижоз эътирози:</span>
-                    <span className="text-muted-foreground italic">«{s.customer_objection}»</span>
+                    {isEditMode || isEditingScriptInline ? (
+                      <input
+                        type="text"
+                        value={s.customer_objection}
+                        onChange={e => {
+                          const updated = [...(report.idealScriptSuggestions || [])]
+                          updated[idx] = { ...updated[idx], customer_objection: e.target.value }
+                          setReport({ ...report, idealScriptSuggestions: updated })
+                        }}
+                        className="w-full px-2 py-0.5 rounded bg-background border border-emerald-500/40 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500 font-medium"
+                      />
+                    ) : (
+                      <span className="text-muted-foreground italic">«{s.customer_objection}»</span>
+                    )}
                   </div>
                   <div className="flex items-start gap-2 text-xs">
                     <span className="font-bold text-amber-400 shrink-0">Менежер жавоби:</span>
-                    <span className="text-muted-foreground/80">«{s.manager_answer}»</span>
+                    {isEditMode || isEditingScriptInline ? (
+                      <input
+                        type="text"
+                        value={s.manager_answer}
+                        onChange={e => {
+                          const updated = [...(report.idealScriptSuggestions || [])]
+                          updated[idx] = { ...updated[idx], manager_answer: e.target.value }
+                          setReport({ ...report, idealScriptSuggestions: updated })
+                        }}
+                        className="w-full px-2 py-0.5 rounded bg-background border border-emerald-500/40 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500 font-medium"
+                      />
+                    ) : (
+                      <span className="text-muted-foreground/80">«{s.manager_answer}»</span>
+                    )}
                   </div>
-                  <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-300 font-medium leading-relaxed">
-                    <span className="font-bold text-emerald-400 block mb-0.5">✨ AI Идеал Скрипт таклифи:</span>
-                    {s.ideal_ai_script}
+                  <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-300 font-medium leading-relaxed space-y-1">
+                    <span className="font-bold text-emerald-400 block mb-0.5">✨ AI Сўзлашув варианти:</span>
+                    {isEditMode || isEditingScriptInline ? (
+                      <textarea
+                        rows={2}
+                        value={s.ideal_ai_script}
+                        onChange={e => {
+                          const updated = [...(report.idealScriptSuggestions || [])]
+                          updated[idx] = { ...updated[idx], ideal_ai_script: e.target.value }
+                          setReport({ ...report, idealScriptSuggestions: updated })
+                        }}
+                        className="w-full px-2 py-1 rounded bg-background border border-emerald-500/40 text-xs text-emerald-200 focus:outline-none focus:ring-1 focus:ring-emerald-500 resize-none font-medium"
+                      />
+                    ) : (
+                      <p>{s.ideal_ai_script}</p>
+                    )}
                   </div>
                 </div>
               ))}
@@ -1730,22 +1779,66 @@ ${generateRadarChartSVG(report.criteria, report.audioDurationSeconds > 0 ? `${Ma
           {/* ─── ROP Training & Action Plan Card ─── */}
           {report.ropTrainingPlan && (
             <div className="rounded-2xl border border-purple-500/30 bg-gradient-to-r from-purple-950/20 via-card to-card p-5 space-y-3">
-              <div className="flex items-center gap-2">
-                <GraduationCap size={18} className="text-purple-400" />
-                <h3 className="text-sm font-bold text-foreground">Менежерга тавсия</h3>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <GraduationCap size={18} className="text-purple-400" />
+                  <h3 className="text-sm font-bold text-foreground">Менежерга тавсия</h3>
+                </div>
+                <button
+                  onClick={() => setIsEditingRopInline(!isEditingRopInline)}
+                  className="flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-lg bg-purple-500/15 text-purple-300 border border-purple-500/30 hover:bg-purple-500/25 transition-all"
+                >
+                  <Pencil size={11} /> {isEditingRopInline || isEditMode ? 'Сақлаш' : 'Таҳрирлаш'}
+                </button>
               </div>
               <div className="grid sm:grid-cols-3 gap-3">
-                <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/20">
+                <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/20 space-y-1">
                   <span className="text-[10px] font-bold text-purple-400 uppercase tracking-wider block mb-1">Паст кўникма</span>
-                  <p className="text-xs font-bold text-foreground">{report.ropTrainingPlan.weak_skill}</p>
+                  {isEditMode || isEditingRopInline ? (
+                    <input
+                      type="text"
+                      value={report.ropTrainingPlan.weak_skill}
+                      onChange={e => setReport({
+                        ...report,
+                        ropTrainingPlan: { ...report.ropTrainingPlan!, weak_skill: e.target.value }
+                      })}
+                      className="w-full px-2 py-1 rounded bg-background border border-purple-500/40 text-xs font-bold text-foreground focus:outline-none focus:ring-1 focus:ring-purple-500"
+                    />
+                  ) : (
+                    <p className="text-xs font-bold text-foreground">{report.ropTrainingPlan.weak_skill}</p>
+                  )}
                 </div>
-                <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20">
+                <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 space-y-1">
                   <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wider block mb-1">Рекомендуемый тренинг</span>
-                  <p className="text-xs font-medium text-foreground">{report.ropTrainingPlan.recommended_training}</p>
+                  {isEditMode || isEditingRopInline ? (
+                    <textarea
+                      rows={2}
+                      value={report.ropTrainingPlan.recommended_training}
+                      onChange={e => setReport({
+                        ...report,
+                        ropTrainingPlan: { ...report.ropTrainingPlan!, recommended_training: e.target.value }
+                      })}
+                      className="w-full px-2 py-1 rounded bg-background border border-blue-500/40 text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
+                    />
+                  ) : (
+                    <p className="text-xs font-medium text-foreground">{report.ropTrainingPlan.recommended_training}</p>
+                  )}
                 </div>
-                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 space-y-1">
                   <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block mb-1">Ходимга топшириқ</span>
-                  <p className="text-xs font-medium text-foreground">{report.ropTrainingPlan.task_for_manager}</p>
+                  {isEditMode || isEditingRopInline ? (
+                    <textarea
+                      rows={2}
+                      value={report.ropTrainingPlan.task_for_manager}
+                      onChange={e => setReport({
+                        ...report,
+                        ropTrainingPlan: { ...report.ropTrainingPlan!, task_for_manager: e.target.value }
+                      })}
+                      className="w-full px-2 py-1 rounded bg-background border border-emerald-500/40 text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500 resize-none"
+                    />
+                  ) : (
+                    <p className="text-xs font-medium text-foreground">{report.ropTrainingPlan.task_for_manager}</p>
+                  )}
                 </div>
               </div>
             </div>
