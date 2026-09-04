@@ -299,18 +299,44 @@ function CriterionCard({
             <p className="text-xs text-muted-foreground leading-relaxed">{c.explanation}</p>
           ) : null}
 
-          {/* Evidence quote */}
-          {c.evidenceQuote && !editMode && (
-            <div className="flex items-start gap-2 p-2 rounded-lg bg-muted/30 border border-border/30">
-              <MessageSquare size={12} className="text-blue-400 mt-0.5 flex-shrink-0" />
-              <div>
-                {c.evidenceTimestamp && (
-                  <span className="text-[10px] text-blue-400 font-mono">[{c.evidenceTimestamp}] </span>
-                )}
-                <span className="text-xs text-foreground italic">«{c.evidenceQuote}»</span>
+          {/* Evidence quote / STT snippet editing */}
+          <div className="space-y-1.5 pt-1">
+            <p className="text-[10px] font-bold text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
+              <MessageSquare size={11} />
+              STT Иқтибос (Сўзлашувдан парча)
+            </p>
+            {editMode ? (
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-muted-foreground font-semibold">Таймкод:</span>
+                  <input
+                    type="text"
+                    value={c.evidenceTimestamp || ''}
+                    onChange={e => onChange({ ...c, evidenceTimestamp: e.target.value })}
+                    placeholder="00:24"
+                    className="w-24 px-2 py-1 rounded-lg bg-muted/40 border border-blue-500/30 text-xs font-mono text-blue-300 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                  />
+                </div>
+                <textarea
+                  rows={2}
+                  value={c.evidenceQuote || ''}
+                  onChange={e => onChange({ ...c, evidenceQuote: e.target.value })}
+                  placeholder="STT суҳбатдан иқтибос парчаси (масалан: «Ака, бу ерда клинический база қилинади-да»)..."
+                  className="w-full px-2.5 py-1.5 rounded-lg bg-muted/40 border border-blue-500/30 text-xs italic text-foreground focus:outline-none focus:ring-1 focus:ring-blue-500/50 resize-none"
+                />
               </div>
-            </div>
-          )}
+            ) : c.evidenceQuote ? (
+              <div className="flex items-start gap-2.5 p-2.5 rounded-lg bg-blue-500/10 border-l-4 border-l-blue-500 border-t border-r border-b border-blue-500/20">
+                <MessageSquare size={13} className="text-blue-400 mt-0.5 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <span className="text-xs text-foreground italic font-medium">«{c.evidenceQuote}»</span>
+                  {c.evidenceTimestamp && (
+                    <span className="ml-2 text-[10px] text-blue-400 font-mono font-bold">[{c.evidenceTimestamp}]</span>
+                  )}
+                </div>
+              </div>
+            ) : null}
+          </div>
 
           {/* Errors */}
           <div>
@@ -1845,30 +1871,99 @@ ${generateRadarChartSVG(report.criteria, report.audioDurationSeconds > 0 ? `${Ma
           )}
 
           {/* Key Quotes */}
-          {report.importantQuotes.length > 0 && (
+          {(report.importantQuotes.length > 0 || isEditMode) && (
             <div className="rounded-2xl border border-border/40 bg-card/60 p-5">
-              <h3 className="text-sm font-bold text-foreground flex items-center gap-2 mb-4">
-                <MessageSquare size={16} className="text-blue-400" />
-                Muhim iqtiboslar
-              </h3>
-              <div className="space-y-2">
-                {report.importantQuotes.slice(0, 5).map((q, i) => (
-                  <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-muted/30 border border-border/30">
-                    <span className={cn(
-                      'text-[10px] font-bold px-1.5 py-0.5 rounded flex-shrink-0 mt-0.5',
-                      q.speaker === 'MANAGER'
-                        ? 'bg-blue-500/20 text-blue-400'
-                        : 'bg-purple-500/20 text-purple-400'
-                    )}>
-                      {q.speaker === 'MANAGER' ? 'M' : 'Mij'}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <span className="text-[10px] text-muted-foreground font-mono">[{q.timestamp}]</span>
-                      <p className="text-xs text-foreground mt-0.5 italic">«{q.text}»</p>
-                    </div>
-                  </div>
-                ))}
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                  <MessageSquare size={16} className="text-blue-400" />
+                  Муҳим иқтибослар (STT)
+                </h3>
+                {isEditMode && (
+                  <button
+                    onClick={() => setReport({
+                      ...report,
+                      importantQuotes: [...report.importantQuotes, { speaker: 'MANAGER', timestamp: '00:00', text: '' }]
+                    })}
+                    className="flex items-center gap-1 text-xs font-bold text-blue-400 hover:text-blue-300"
+                  >
+                    <PlusCircle size={13} /> Иқтибос қўшиш
+                  </button>
+                )}
               </div>
+              {report.importantQuotes.length > 0 ? (
+                <div className="space-y-2">
+                  {report.importantQuotes.map((q, i) => (
+                    <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-muted/30 border border-border/30">
+                      {isEditMode ? (
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <select
+                              value={q.speaker}
+                              onChange={e => {
+                                const updated = [...report.importantQuotes]
+                                updated[i] = { ...updated[i], speaker: e.target.value }
+                                setReport({ ...report, importantQuotes: updated })
+                              }}
+                              className="text-xs px-2 py-1 rounded-lg bg-muted/40 border border-blue-500/30 text-foreground focus:outline-none"
+                            >
+                              <option value="MANAGER">Менежер (M)</option>
+                              <option value="CUSTOMER">Мижоз (Mij)</option>
+                            </select>
+                            <input
+                              type="text"
+                              value={q.timestamp}
+                              onChange={e => {
+                                const updated = [...report.importantQuotes]
+                                updated[i] = { ...updated[i], timestamp: e.target.value }
+                                setReport({ ...report, importantQuotes: updated })
+                              }}
+                              placeholder="00:00"
+                              className="w-20 px-2 py-1 rounded-lg bg-muted/40 border border-blue-500/30 text-xs font-mono text-blue-300 focus:outline-none"
+                            />
+                            <button
+                              onClick={() => setReport({
+                                ...report,
+                                importantQuotes: report.importantQuotes.filter((_, idx) => idx !== i)
+                              })}
+                              className="ml-auto text-muted-foreground hover:text-red-400"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+                          <textarea
+                            rows={2}
+                            value={q.text}
+                            onChange={e => {
+                              const updated = [...report.importantQuotes]
+                              updated[i] = { ...updated[i], text: e.target.value }
+                              setReport({ ...report, importantQuotes: updated })
+                            }}
+                            placeholder="Иқтибос матни..."
+                            className="w-full px-2 py-1 rounded-lg bg-muted/40 border border-blue-500/30 text-xs italic text-foreground focus:outline-none resize-none"
+                          />
+                        </div>
+                      ) : (
+                        <>
+                          <span className={cn(
+                            'text-[10px] font-bold px-1.5 py-0.5 rounded flex-shrink-0 mt-0.5',
+                            q.speaker === 'MANAGER'
+                              ? 'bg-blue-500/20 text-blue-400'
+                              : 'bg-purple-500/20 text-purple-400'
+                          )}>
+                            {q.speaker === 'MANAGER' ? 'M' : 'Mij'}
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <span className="text-[10px] text-muted-foreground font-mono">[{q.timestamp}]</span>
+                            <p className="text-xs text-foreground mt-0.5 italic">«{q.text}»</p>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : isEditMode ? (
+                <p className="text-xs text-muted-foreground/40 italic">Иқтибослар йўқ. + ни босиб қўшинг</p>
+              ) : null}
             </div>
           )}
 
