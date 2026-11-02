@@ -63,6 +63,7 @@ interface ManualAuditReport {
   managerName: string
   managerPosition: string
   customerName: string
+  dealNumber?: string
   audioFileName: string
   audioDurationSeconds: number
   analyzedAt: string
@@ -473,6 +474,7 @@ export default function ManualAuditPage() {
   const [managerPosition, setManagerPosition] = useState('Sotuv menejeri')
   const [companyName, setCompanyName] = useState('')
   const [customerName, setCustomerName] = useState('')
+  const [dealNumber, setDealNumber] = useState('')
   const [okkOfficer, setOkkOfficer] = useState('') // Mas'ul Sifat nazorati hodimi
   const [loading, setLoading] = useState(false)
   const [progress, setProgress] = useState<'idle' | 'uploading' | 'transcribing' | 'analyzing' | 'done'>('idle')
@@ -561,6 +563,7 @@ export default function ManualAuditPage() {
       form.append('managerPosition', managerPosition)
       form.append('companyName', companyName)
       form.append('customerName', customerName)
+      form.append('dealNumber', dealNumber)
 
       // Switch to transcribing stage — this is where Aisha does async polling
       setProgress('transcribing')
@@ -607,6 +610,7 @@ export default function ManualAuditPage() {
     setProgress('idle')
     setManagerName('')
     setCustomerName('')
+    setDealNumber('')
     setOkkOfficer('')
     setShowTranscript(false)
     setEditingTranscript('')
@@ -687,7 +691,7 @@ export default function ManualAuditPage() {
     return `
       <div style="border:1.5px solid #cbd5e1; border-radius:22px; padding:28px 24px; background:#ffffff; max-width:540px; margin:40px auto; text-align:center; box-shadow:0 6px 20px rgba(0,0,0,0.06); font-family:sans-serif; page-break-inside:avoid; break-inside:avoid;">
         <div style="font-size:18px; font-weight:900; color:#0f172a; text-transform:uppercase; letter-spacing:1.2px; margin-bottom:4px;">MEZONLAR BO'YICHA</div>
-        <div style="font-size:13px; font-weight:600; color:#64748b; margin-bottom:20px;">Tahlil audio: sdelka • ${audioDurationStr}</div>
+        <div style="font-size:13px; font-weight:600; color:#64748b; margin-bottom:20px;">Tahlil audio: sdelka ${(dealNumber || report?.dealNumber) ? `${dealNumber || report?.dealNumber} ` : ''}• ${audioDurationStr}</div>
         <svg width="440" height="440" viewBox="0 0 300 300" style="overflow:visible; display:block; margin:0 auto;">
           ${gridRings}
           ${axisLines}
@@ -931,7 +935,8 @@ export default function ManualAuditPage() {
       <td class="label">Лавозими</td><td class="value">${report.managerPosition}</td></tr>
   <tr><td class="label">Мижоз</td><td class="value">${report.customerName || 'Номаълум'}</td>
       <td class="label">Аудио файл</td><td class="value">${report.audioFileName}</td></tr>
-  <tr><td class="label">ОКК ходими</td><td class="value" colspan="3">${okkOfficer || '—'}</td></tr>
+  <tr><td class="label">ОКК ходими</td><td class="value">${okkOfficer || '—'}</td>
+      <td class="label">Сделка рақами</td><td class="value">${dealNumber || report.dealNumber || '—'}</td></tr>
   <tr><td class="label">Қўнғироқ натижаси</td><td class="value">${report.callResult || '—'}</td>
       <td class="label">Давомийлиги</td><td class="value">${report.audioDurationSeconds > 0 ? `${Math.floor(report.audioDurationSeconds/60)}:${String(Math.floor(report.audioDurationSeconds%60)).padStart(2,'0')}` : '—'}</td></tr>
 </table>
@@ -971,18 +976,6 @@ ${report.nextStep ? `
 <div class="summary-block purple" style="margin-bottom:16px">
   <h4 style="color:#7c3aed">⚡ Кейинги қадам</h4>
   <p>${report.nextStep}</p>
-</div>` : ''}
-
-${report.idealScriptSuggestions?.length ? `
-<div class="summary-block green" style="margin-bottom:16px;border-color:#16a34a;page-break-inside:avoid;break-inside:avoid;">
-  <h4 style="color:#16a34a">✨ Сўзлашув варианти</h4>
-  ${report.idealScriptSuggestions.map(s => `
-    <div style="margin-top:8px;padding:8px 12px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0">
-      <div style="font-size:12px;color:#dc2626"><b>Мижоз эътирози:</b> «${s.customer_objection}»</div>
-      <div style="font-size:12px;color:#d97706"><b>Менежер жавоби:</b> «${s.manager_answer}»</div>
-      <div style="font-size:13px;color:#15803d;font-weight:700;margin-top:4px"><b>✨ AI Сўзлашув варианти:</b> ${s.ideal_ai_script}</div>
-    </div>
-  `).join('')}
 </div>` : ''}
 
 ${report.ropTrainingPlan ? `
@@ -1286,6 +1279,19 @@ ${generateRadarChartSVG(report.criteria, report.audioDurationSeconds > 0 ? `${Ma
               />
             </div>
 
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">
+                Сделка рақами
+              </label>
+              <input
+                type="text"
+                value={dealNumber}
+                onChange={e => setDealNumber(e.target.value)}
+                placeholder="Масалан: #32451890"
+                className="w-full px-3 py-2.5 rounded-xl bg-muted/30 border border-border/50 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary/40 transition-all"
+              />
+            </div>
+
             <div className="pt-2 border-t border-border/40 space-y-3">
               <div>
                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
@@ -1414,6 +1420,7 @@ ${generateRadarChartSVG(report.criteria, report.audioDurationSeconds > 0 ? `${Ma
                     { label: 'Lavomi', value: report.managerPosition },
                     { label: 'Xodim', value: report.managerName },
                     ...(report.customerName ? [{ label: 'Mijoz', value: report.customerName }] : []),
+                    ...((dealNumber || report.dealNumber) ? [{ label: 'Сделка рақами', value: dealNumber || report.dealNumber || '' }] : []),
                     ...(okkOfficer ? [{ label: 'ОКК масъул ходим', value: okkOfficer }] : []),
                   ].map(({ label, value }) => (
                     <div key={label} className="flex items-baseline gap-2">
@@ -1721,84 +1728,6 @@ ${generateRadarChartSVG(report.criteria, report.audioDurationSeconds > 0 ? `${Ma
                   {report.nextStep || 'Кейинги қадам келишилмади'}
                 </p>
               )}
-            </div>
-          )}
-
-          {/* ─── Ideal AI Script Suggestion Card ─── */}
-          {report.idealScriptSuggestions && report.idealScriptSuggestions.length > 0 && (
-            <div className="rounded-2xl border border-emerald-500/30 bg-gradient-to-r from-emerald-950/20 via-card to-card p-5 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Sparkles size={16} className="text-emerald-400" />
-                  <h3 className="text-sm font-bold text-foreground">Сўзлашув варианти</h3>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setIsEditingScriptInline(!isEditingScriptInline)}
-                    className="flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-lg bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/25 transition-all"
-                  >
-                    <Pencil size={11} /> {isEditingScriptInline || isEditMode ? 'Сақлаш' : 'Таҳрирлаш'}
-                  </button>
-                  <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                    +90% сотув эҳтимоли
-                  </span>
-                </div>
-              </div>
-              {report.idealScriptSuggestions.map((s, idx) => (
-                <div key={idx} className="p-3.5 rounded-xl bg-emerald-500/5 border border-emerald-500/20 space-y-2">
-                  <div className="flex items-start gap-2 text-xs">
-                    <span className="font-bold text-red-400 shrink-0">Мижоз эътирози:</span>
-                    {isEditMode || isEditingScriptInline ? (
-                      <input
-                        type="text"
-                        value={s.customer_objection}
-                        onChange={e => {
-                          const updated = [...(report.idealScriptSuggestions || [])]
-                          updated[idx] = { ...updated[idx], customer_objection: e.target.value }
-                          setReport({ ...report, idealScriptSuggestions: updated })
-                        }}
-                        className="w-full px-2 py-0.5 rounded bg-background border border-emerald-500/40 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500 font-medium"
-                      />
-                    ) : (
-                      <span className="text-muted-foreground italic">«{s.customer_objection}»</span>
-                    )}
-                  </div>
-                  <div className="flex items-start gap-2 text-xs">
-                    <span className="font-bold text-amber-400 shrink-0">Менежер жавоби:</span>
-                    {isEditMode || isEditingScriptInline ? (
-                      <input
-                        type="text"
-                        value={s.manager_answer}
-                        onChange={e => {
-                          const updated = [...(report.idealScriptSuggestions || [])]
-                          updated[idx] = { ...updated[idx], manager_answer: e.target.value }
-                          setReport({ ...report, idealScriptSuggestions: updated })
-                        }}
-                        className="w-full px-2 py-0.5 rounded bg-background border border-emerald-500/40 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500 font-medium"
-                      />
-                    ) : (
-                      <span className="text-muted-foreground/80">«{s.manager_answer}»</span>
-                    )}
-                  </div>
-                  <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-300 font-medium leading-relaxed space-y-1">
-                    <span className="font-bold text-emerald-400 block mb-0.5">✨ AI Сўзлашув варианти:</span>
-                    {isEditMode || isEditingScriptInline ? (
-                      <textarea
-                        rows={2}
-                        value={s.ideal_ai_script}
-                        onChange={e => {
-                          const updated = [...(report.idealScriptSuggestions || [])]
-                          updated[idx] = { ...updated[idx], ideal_ai_script: e.target.value }
-                          setReport({ ...report, idealScriptSuggestions: updated })
-                        }}
-                        className="w-full px-2 py-1 rounded bg-background border border-emerald-500/40 text-xs text-emerald-200 focus:outline-none focus:ring-1 focus:ring-emerald-500 resize-none font-medium"
-                      />
-                    ) : (
-                      <p>{s.ideal_ai_script}</p>
-                    )}
-                  </div>
-                </div>
-              ))}
             </div>
           )}
 
