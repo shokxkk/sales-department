@@ -137,18 +137,32 @@ export class OpenAIProvider implements AIProvider {
   }): Promise<TranscriptionResult> {
     const model = process.env.OPENAI_WHISPER_MODEL || 'whisper-1'
 
+    const ext =
+      params.mimeType?.includes('mp3') || params.mimeType?.includes('mpeg')
+        ? 'mp3'
+        : params.mimeType?.includes('m4a') || params.mimeType?.includes('mp4')
+        ? 'm4a'
+        : params.mimeType?.includes('ogg')
+        ? 'ogg'
+        : 'wav'
+
     // Create a File-like object for the OpenAI SDK
-    const audioFile = new File([params.audioBuffer as unknown as BlobPart], 'audio.wav', {
-      type: params.mimeType || 'audio/wav',
+    const audioFile = new File([params.audioBuffer as unknown as BlobPart], `audio.${ext}`, {
+      type: params.mimeType || 'audio/mpeg',
     })
+
+    const isIsoLang = Boolean(params.hint && /^[a-z]{2}$/i.test(params.hint.trim()))
 
     // Transcribe with verbose JSON to get segments + timestamps
     const response = await this.client.audio.transcriptions.create({
       model,
       file: audioFile,
       response_format: 'verbose_json',
-      language: params.hint && params.hint !== 'uz' ? params.hint : undefined,
-      prompt: 'Assalomu alaykum. Yaxshimisiz? Bu sotuv bo‘limi. Bitrix, narxi, shartnoma, rahmat.',
+      language:
+        isIsoLang && params.hint!.trim().toLowerCase() !== 'uz'
+          ? params.hint!.trim().toLowerCase()
+          : undefined,
+      prompt: 'Assalomu alaykum. Yaxshimisiz? Bu sotuv bo‘limi. Marketing Markazi, Bitrix, narxi, shartnoma, rahmat.',
     })
 
     // Build segments — Whisper gives word-level or segment-level depending on model
@@ -184,11 +198,19 @@ export class OpenAIProvider implements AIProvider {
       console.warn('[OpenAIProvider] Transcript & speaker refinement failed, using fallback:', err)
     }
 
+    const detectedDuration =
+      params.durationSeconds ||
+      Math.round(
+        (response as { duration?: number }).duration ||
+          segments[segments.length - 1]?.endSeconds ||
+          0
+      )
+
     return {
       language: 'uz',
       rawText,
       segments,
-      durationSeconds: params.durationSeconds,
+      durationSeconds: detectedDuration,
       provider: 'openai_whisper_plus_gpt4o',
       modelUsed: `${model}+${process.env.OPENAI_AUDIT_MODEL || 'gpt-4o'}`,
     }
@@ -316,77 +338,16 @@ Ensure exact length ${segments.length}. Do not return any other text.`
 Вазифангиз: берилган қўнғироқнинг транскрипциясини ва сегментларини контекст билан чуқур таҳлил қилиш ва ФАҚАТ қуйидаги JSON форматида жавоб бериш.
 
 ═══════════════════════════════════════════════
-CALL CENTER 8 БОШ СТАНДАРТИ БАҲОЛАШ ҚОИДАЛАРИ
+OKK — CALL CENTER 8 ТА МЕЗОН БАҲОЛАШ ҚОИДАЛАРИ
 ═══════════════════════════════════════════════
 
-1. Salomlashish va identifikatsiya (10 балл, КРИТИК):
-   — Менежер о‘зини (исм), компанияни ("Marketing Markazi") ва лавозимини ("сотув менежериман") айтиши шарт.
-   — Мижоз исмини аниқлаб, суҳбат давомида мижозга исми билан мурожаат қилиши керак.
-   — НОРАСМИЙ мурожаатлар ("ака", "опа", "опажон", "акажон", "холажон", "амаки") ҚАТЪИЯН ТАҚИҚЛАНАДИ! Мижоз исмини айтмаса — "ҳурматли мижоз".
-   — Чиқувчи қўнғироқларда гаплашишга қулайлигини аниқлаши керак. Ноқулай бўлса — бошқа вақ5. E’tirozlar bilan ishlash (15 балл):
-   — ЖУДА МУҲИМ ҚОИДА: Агар суҳбатда мижоз томонидан ҳеч қандай эътироз билдирилмаган бўлса ("Эътирозлар бўлмади") — менежерга БАҲО СИФАТИДА ТЎЛИҚ 15 БАЛЛ берилади (status = PASS, score = 15, passed = true, explanation = "Мижоз томонидан эътирозлар билдирилмади (15/15 балл)").
-   — Агар мижоз эътироз билдирса ва менежер унга тўғри, мантиқий ва қийматга асосланган жавоб берса — 15 балл (status = PASS).
-   — ФАҚАТ менежер мижоз эътирозига жавоб бера олмаса, жавобсиз қолдирса ёки инкор қилиб баҳслашса — 0 балл берилади (status = FAIL, score = 0, passed = false).
-
-═══════════════════════════════════════
+БАҲОЛАШ ҚОИДАЛАРИ:
 
 1. БАРЧА МАТН МАЙДОНЛАРИ ЎЗБЕК КИРИЛЛИЦАСИДА бўлиши ШАРТ!
    — Мезон номларида ёки матнларда ҳеч қачон "greeting_hello" инглизча сўзи чиқмасин! Унинг ўрнига доимо "Саломлашиш ва идентификация" ёки "Саломлашиш" деб ёзинг.
 
 2. КОНТЕКСТ-АВЕЙРлик:
-   — Агар эътироз бўлмаса — "E’tirozlar bilan ishlash" мезони status = PASS, score = 15 (тўлиқ 15 балл берилади).
-   — Кирувчи қўнғироқда "Гаплашишга қулайми?" саволи берилмаса — FAIL эмас, NOT_APPLICABLE.�айта қўнғироқ" каби бир хил стандарт шаблон ёки такрорланувчи матн ишлатманг! Суҳбат транскриптини РЕАЛ ўрганиб чиқиб, менежер ва мижоз айнан нимага келишиб олганини (масалан: "Сешанба куни соат 15:00 да қайта боғланиш", "Тижорий таклиф кўриб чиқилгач 5-сентябрда қўнғироқ қилиш", "Мижоз ўйлаб кўриб ўзи алоқага чиқади") аниқ кўрсатиб ёзинг. Агар суҳбатда кейинги қадам умуман келишилмаган бўлса — "Кейинги қадам келишилмади" деб ёзинг.
-
-10. Фақат JSON қайтаринг — ҳеч қандай қўшимча матн бўлмасин.
-
-Чек-лист мезонлари:
-${criteriaList}
-${scriptSection}
-
-JSON структураси:
-{
-  "call_type": "new_lead|repeat_call|sale|service|complaint|wrong_number",
-  "language": "uz_cyrillic|ru|mixed_uz_ru",
-  "summary": "қисқача, чуқур ва лўнда хулоса",
-  "customer_need": ["эҳтиёж 1"],
-  "objections": [{"category": "price|time|trust|other", "quote": "...", "timestamp": "00:00", "handled": false}],
-  "manager_talk_ratio": 60,
-  "customer_talk_ratio": 40,
-  "interruptions": 2,
-  "long_pauses": 1,
-  "filler_words": [{"word": "демак", "count": 5}],
-  "rudeness_detected": false,
-  "false_promises_detected": false,
-  "script_compliance": 75,
-  "sale_probability": 65,
-  "strengths": ["умумий кучли томон"],
-  "mistakes": ["умумий хато"],
-  "important_quotes": [{"speaker": "MANAGER", "timestamp": "01:23", "text": "..."}],
-  "criteria": [{
-    "criterion_code": "greeting_hello",
-    "score": 4,
-    "max_score": 5,
-    "passed": true,
-    "status": "PARTIAL",
-    "explanation": "Умумий тушунтириш",
-    "strengths": ["Кучли томон 1"],
-    "errors": ["Хато 1"],
-    "recommendations": ["Тавсия 1"],
-    "evidence": [{"quote": "Ассалому алайкум...", "start": 2.5, "end": 5.0}],
-    "evidence_timestamp": "00:02",
-    "evidence_quote": "Ассалому алайкум",
-    "criticalFail": false
-  }],
-  "total_score": 55,
-  "recommendation": "менежерга тавсия",
-  "rop_recommendation": "РОП учун тавсия",
-  "call_result": "Follow-up",
-  "next_step": "суҳбатдаги аниқ ва РЕАЛ келишилган кейинги қадам ва вақти (масалан: 'Сешанба куни соат 14:00 да қайта қўнғироқ')",�══════════════════════════════════════
-
-1. БАРЧА МАТН МАЙДОНЛАРИ ЎЗБЕК КИРИЛЛИЦАСИДА бўлиши ШАРТ!
-
-2. КОНТЕКСТ-АВЕЙРлик:
-   — Агар эътироз бўлмаса — "E’tirozlar bilan ishlash" мезони status = NOT_APPLICABLE (score = 0, denominator'дан чиқарилади).
+   — Агар эътироз бўлмаса — "E'tirozlar bilan ishlash" мезони status = PASS, score = max_score (тўлиқ балл берилади).
    — Кирувчи қўнғироқда "Гаплашишга қулайми?" саволи берилмаса — FAIL эмас, NOT_APPLICABLE.
    — Хизмат/сервис қўнғироғида сотув тақдимоти мажбурий эмас.
 
@@ -415,9 +376,14 @@ JSON структураси:
 7. БИЗНЕС ТАҲЛИЛ (business_analysis):
    Фақат транскриптда аниқ маълумот бўлса тўлдир. Маълумот бўлмаса — ҚОЛДИР (null). УЙЛАБ ТОПМА!
 
-8. Фақат JSON қайтаринг — ҳеч қандай қўшимча матн бўлмасин.
+8. КЕЙИНГИ ҚАДАМ (next_step):
+   "Қайта қўнғироқ" каби бир хил стандарт шаблон ёки такрорланувчи матн ишлатманг! Суҳбат транскриптини РЕАЛ ўрганиб чиқиб, менежер ва мижоз айнан нимага келишиб олганини аниқ кўрсатиб ёзинг. Агар суҳбатда кейинги қадам умуман келишилмаган бўлса — "Кейинги қадам келишилмади" деб ёзинг.
 
-Чек-лист мезонлари:
+9. МУҲИМ: criteria массивида берилган БАРЧА мезонлар учун entry бўлиши ШАРТ! Ҳеч бир мезонни ўтказиб юбормасдан, барча мезонлар учун баҳо беринг.
+
+10. Фақат JSON қайтаринг — ҳеч қандай қўшимча матн бўлмасин.
+
+Чек-лист мезонлари (БАРЧАСИГА баҳо беринг):
 ${criteriaList}
 ${scriptSection}
 
@@ -440,26 +406,28 @@ JSON структураси:
   "strengths": ["умумий кучли томон"],
   "mistakes": ["умумий хато"],
   "important_quotes": [{"speaker": "MANAGER", "timestamp": "01:23", "text": "..."}],
-  "criteria": [{
-    "criterion_code": "greeting_hello",
-    "score": 4,
-    "max_score": 5,
-    "passed": true,
-    "status": "PARTIAL",
-    "explanation": "Умумий тушунтириш",
-    "strengths": ["Кучли томон 1"],
-    "errors": ["Хато 1"],
-    "recommendations": ["Тавсия 1"],
-    "evidence": [{"quote": "Ассалому алайкум...", "start": 2.5, "end": 5.0}],
-    "evidence_timestamp": "00:02",
-    "evidence_quote": "Ассалому алайкум",
-    "criticalFail": false
-  }],
+  "criteria": [
+    {
+      "criterion_code": "greeting_hello",
+      "score": 4,
+      "max_score": 10,
+      "passed": true,
+      "status": "PARTIAL",
+      "explanation": "Умумий тушунтириш",
+      "strengths": ["Кучли томон 1"],
+      "errors": ["Хато 1"],
+      "recommendations": ["Тавсия 1"],
+      "evidence": [{"quote": "Ассалому алайкум...", "start": 2.5, "end": 5.0}],
+      "evidence_timestamp": "00:02",
+      "evidence_quote": "Ассалому алайкум",
+      "criticalFail": false
+    }
+  ],
   "total_score": 55,
   "recommendation": "менежерга тавсия",
   "rop_recommendation": "РОП учун тавсия",
   "call_result": "Follow-up",
-  "next_step": "суҳбатдаги аниқ ва РЕАЛ келишилган кейинги қадам ва вақти (масалан: 'Сешанба куни соат 14:00 да қайта қўнғироқ')",
+  "next_step": "суҳбатдаги аниқ ва РЕАЛ келишилган кейинги қадам ва вақти",
   "has_critical_fails": false,
   "business_analysis": {
     "callContext": "Янги мижоз, биринчи мурожаат",
